@@ -1,6 +1,7 @@
 package com.example.RestaurantService.config.Security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,9 +40,13 @@ public class SecurityConfig {
               .requestMatchers("/api/v1/auth/logout").authenticated()
               .requestMatchers("/api/v1/auth/**").permitAll()
               .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-              .requestMatchers("/api/v1/restaurants/**").hasAnyRole("MANAGER", "STAFF","ADMIN")
-              .requestMatchers("/api/v1/orders/**").hasAnyRole("MANAGER", "STAFF","ADMIN")
-              .anyRequest().authenticated()
+              .requestMatchers(HttpMethod.DELETE,"/api/v1/restaurants/**").hasRole("ADMIN")
+              .requestMatchers(HttpMethod.POST,"/api/v1/restaurants/**").hasAnyRole("MANAGER","ADMIN")
+              .requestMatchers(HttpMethod.PUT,"/api/v1/restaurants/**").hasAnyRole("MANAGER","ADMIN")
+              .requestMatchers(HttpMethod.PATCH,"/api/v1/restaurants/**").hasAnyRole("MANAGER","ADMIN")
+              .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasAnyRole("MANAGER","ADMIN")
+              .requestMatchers(HttpMethod.GET,"/api/v1/orders/**").hasAnyRole("MANAGER", "STAFF","ADMIN")
+              .anyRequest().denyAll()
           )
           .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
           .build();
