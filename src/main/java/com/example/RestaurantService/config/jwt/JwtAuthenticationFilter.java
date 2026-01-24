@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.RestaurantService.config.redis.TokenBlacklistService;
-import com.example.RestaurantService.module.user.service.RestaurantService;
+import com.example.RestaurantService.module.user.service.UserService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,10 +20,10 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final RestaurantService RestaurantService;
+    private final UserService RestaurantService;
     private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, RestaurantService RestaurantService, TokenBlacklistService tokenBlacklistService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserService RestaurantService, TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
         this.RestaurantService = RestaurantService;
         this.tokenBlacklistService = tokenBlacklistService;

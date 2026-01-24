@@ -14,7 +14,7 @@ import com.example.RestaurantService.module.user.repository.UserRepository;
 import com.example.RestaurantService.module.user.utils.Exceptions.BusinessException;
 
 @Service
-public class RestaurantService {
+public class UserService {
 
     @Autowired
     private UserRepository userRepository;
@@ -22,6 +22,10 @@ public class RestaurantService {
     public User loadUserByUsername(String username) {
         return userRepository.findByUserName(username)
             .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found with username " + username, HttpStatus.NOT_FOUND));
+    }
+
+    public List<User> loadAllUsers() {
+        return userRepository.findAll();
     }
 
     public User loadUserById(Long id) {
