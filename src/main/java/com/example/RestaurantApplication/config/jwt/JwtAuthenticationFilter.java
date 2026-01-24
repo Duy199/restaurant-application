@@ -1,14 +1,17 @@
 package com.example.RestaurantApplication.config.jwt;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.service.UserService;
 
 import jakarta.servlet.FilterChain;
@@ -63,8 +66,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String username;
+        Role role;
         try {
             username = jwtService.extractUsername(token);
+            role = jwtService.extractUserRole(token);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
 
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -111,11 +116,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             if (jwtService.isTokenValid(token, username)) {
+                var authorities = List.of(new SimpleGrantedAuthority(role.name()));
                 UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
                         username,
                         null,
-                        userService.getAuthorities()
+                        authorities
                     );
 
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

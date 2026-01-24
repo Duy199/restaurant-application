@@ -78,8 +78,8 @@ public class AuthService {
             throw new BusinessException("INVALID_CREDENTIALS", "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
-        String accessToken = jwtService.generateToken(user.getUserName());
-        String refreshToken = jwtService.generateRefreshToken(user.getUserName());
+        String accessToken = jwtService.generateToken(user.getUserName(), user.getRole());
+        String refreshToken = jwtService.generateRefreshToken(user.getUserName(), user.getRole());
 
         return new LoginResponse(user.getId(), user.getUserName(), accessToken, refreshToken);
     }
@@ -87,8 +87,10 @@ public class AuthService {
     public RefreshTokenResponse getRefreshToken (String refreshToken) {
 
         String username;
+        Role role;
         try {
             username = jwtService.extractUsername(refreshToken);
+            role = jwtService.extractUserRole(refreshToken);
         } catch (io.jsonwebtoken.security.SignatureException e) {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token signature is invalid", HttpStatus.UNAUTHORIZED);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
@@ -97,8 +99,8 @@ public class AuthService {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token is invalid", HttpStatus.UNAUTHORIZED);
         }
 
-        String newAccessToken = jwtService.generateToken(username);
-        String newRefreshToken = jwtService.generateRefreshToken(username);
+        String newAccessToken = jwtService.generateToken(username, role);
+        String newRefreshToken = jwtService.generateRefreshToken(username, role);
 
         return new RefreshTokenResponse(newAccessToken, newRefreshToken);
     }

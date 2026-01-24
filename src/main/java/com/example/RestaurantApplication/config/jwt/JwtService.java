@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.example.RestaurantApplication.module.user.model.enums.Role;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -23,9 +24,10 @@ public class JwtService {
     }
     
 
-    public String generateToken(String username) {
+    public String generateToken(String username, Role role) {
         return Jwts.builder()
             .setSubject(username)
+            .claim("role", role.name())
             .setId(UUID.randomUUID().toString())
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + props.getAccessTokenExp()))
@@ -34,9 +36,10 @@ public class JwtService {
     }
 
 
-    public String generateRefreshToken(String username) {
+    public String generateRefreshToken(String username, Role role) {
         return Jwts.builder()
             .setSubject(username)
+            .claim("role", role.name())
             .setId(UUID.randomUUID().toString())
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + props.getRefreshTokenExp()))
@@ -46,6 +49,11 @@ public class JwtService {
 
     public long getRefreshTokenExpiration() {
         return props.getRefreshTokenExp();
+    }
+
+    public Role extractUserRole(String token) {
+        String role = (String) extractClaims(token).get("role");
+        return Role.valueOf(role);
     }
 
     public String extractUsername(String token) {
