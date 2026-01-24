@@ -1,4 +1,4 @@
-package com.example.RestaurantApplication.module.user.dto;
+package com.example.RestaurantApplication.module.user.dto.Token;
 
 public class RefreshTokenResponse {
     private String accessToken;

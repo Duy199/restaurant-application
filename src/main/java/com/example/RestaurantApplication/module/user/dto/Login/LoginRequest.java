@@ -1,4 +1,4 @@
-package com.example.RestaurantApplication.module.user.dto;
+package com.example.RestaurantApplication.module.user.dto.Login;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

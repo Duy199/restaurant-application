@@ -2,11 +2,11 @@ package com.example.RestaurantApplication.module.user.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.RestaurantApplication.module.user.dto.LoginRequest;
-import com.example.RestaurantApplication.module.user.dto.LoginResponse;
-import com.example.RestaurantApplication.module.user.dto.RefreshTokenRequest;
-import com.example.RestaurantApplication.module.user.dto.RefreshTokenResponse;
-import com.example.RestaurantApplication.module.user.dto.RegisterRequest;
+import com.example.RestaurantApplication.module.user.dto.Login.LoginRequest;
+import com.example.RestaurantApplication.module.user.dto.Login.LoginResponse;
+import com.example.RestaurantApplication.module.user.dto.Register.RegisterRequest;
+import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenRequest;
+import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenResponse;
 import com.example.RestaurantApplication.module.user.service.AuthService;
 import com.example.RestaurantApplication.module.user.utils.ResponseWrapper.ApiResponse;
 

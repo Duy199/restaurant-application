@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 
 import com.example.RestaurantApplication.config.jwt.JwtService;
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
-import com.example.RestaurantApplication.module.user.dto.LoginResponse;
-import com.example.RestaurantApplication.module.user.dto.RefreshTokenResponse;
+import com.example.RestaurantApplication.module.user.dto.Login.LoginResponse;
+import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenResponse;
 import com.example.RestaurantApplication.module.user.model.User;
 import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
