@@ -55,7 +55,7 @@ public class AuthService {
         
         // Encode the password before saving
         String encodedPassword = passwordEncoder.encode(password);
-        user.setPassword(encodedPassword);
+        user.setPassWord(encodedPassword);
         
         // Save the user to the database
         try {
@@ -72,7 +72,7 @@ public class AuthService {
         User user = userRepository.findByUserName(userName)
                 .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(password, user.getPassWord())) {
             throw new BusinessException("INVALID_CREDENTIALS", "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
