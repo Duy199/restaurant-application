@@ -25,7 +25,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 
         response.getWriter().write("""
         {
-          "success": false,a
+          "success": false,
           "code": "FORBIDDEN",
           "message": "Access denied"
         }

@@ -46,7 +46,7 @@ public class SecurityConfig {
               .requestMatchers(HttpMethod.PATCH,"/api/v1/restaurants/**").hasAnyRole("MANAGER","ADMIN")
               .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasAnyRole("MANAGER","ADMIN")
               .requestMatchers(HttpMethod.GET,"/api/v1/orders/**").hasAnyRole("MANAGER", "STAFF","ADMIN")
-              .anyRequest().denyAll()
+              .anyRequest().authenticated()
           )
           .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
           .build();

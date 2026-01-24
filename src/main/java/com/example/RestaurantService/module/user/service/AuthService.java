@@ -12,6 +12,7 @@ import com.example.RestaurantService.config.redis.TokenBlacklistService;
 import com.example.RestaurantService.module.user.dto.LoginResponse;
 import com.example.RestaurantService.module.user.dto.RefreshTokenResponse;
 import com.example.RestaurantService.module.user.model.User;
+import com.example.RestaurantService.module.user.model.enums.Role;
 import com.example.RestaurantService.module.user.repository.UserRepository;
 import com.example.RestaurantService.module.user.utils.Exceptions.BusinessException;
 
@@ -52,6 +53,7 @@ public class AuthService {
         
         user.setUserName(userName);
         user.setEmail(email);
+        user.setRole(Role.ROLE_USER);
         
         // Encode the password before saving
         String encodedPassword = passwordEncoder.encode(password);
