@@ -13,7 +13,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 
@@ -24,8 +23,8 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @GetMapping("/")
-    public ApiResponse<List<UserDetail>> getAllUser (@RequestParam String param) {
+    @GetMapping("")
+    public ApiResponse<List<UserDetail>> getAllUser() {
         List<User> users = userService.loadAllUsers();
         return ApiResponse.success("Users fetched successfully", "200",
             users.stream()
