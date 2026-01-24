@@ -13,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.FetchType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import com.example.RestaurantApplication.module.restaurant.model.RestaurantEntity;
 import com.example.RestaurantApplication.module.user.model.enums.Role;
 import java.time.LocalDateTime;
 
@@ -24,10 +26,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_name", unique = true)
+    @Column(name = "user_name", unique = true, updatable = false)
     private String userName;
 
-    @Column(name = "email", unique = true)
+    @Column(name = "email", unique = true, updatable = true)
     private String email;
 
     @Column(name = "password")
@@ -38,12 +40,15 @@ public class User {
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", updatable = true)
     private LocalDateTime updatedAt;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "restaurant_id", insertable = false, updatable = false)
+    private RestaurantEntity restaurant;
     @Column(name = "restaurant_id")
     private Long restaurantId;
 
@@ -76,12 +81,12 @@ public class User {
         this.email = email;
     }
 
-    public String getPassWord() {
+    public String getPassword() {
         return password;
     }
 
-    public void setPassWord(String passWord) {
-        this.password = passWord;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public LocalDateTime getCreatedAt() {

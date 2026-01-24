@@ -2,6 +2,7 @@ package com.example.RestaurantApplication.config.jwt;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -123,8 +124,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         authorities
                     );
-
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                auth.setDetails(Map.of("userName", username, "role", role.name(), "details", new WebAuthenticationDetailsSource().buildDetails(request)));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
