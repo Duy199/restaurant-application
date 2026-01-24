@@ -8,7 +8,7 @@ import com.example.RestaurantApplication.module.user.dto.Register.RegisterReques
 import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenRequest;
 import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenResponse;
 import com.example.RestaurantApplication.module.user.service.AuthService;
-import com.example.RestaurantApplication.module.user.utils.ResponseWrapper.ApiResponse;
+import com.example.RestaurantApplication.utils.ResponseWrapper.ApiResponse;
 
 import jakarta.validation.Valid;
 

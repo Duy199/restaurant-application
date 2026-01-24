@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.RestaurantApplication.module.user.dto.User.UserDetail;
 import com.example.RestaurantApplication.module.user.model.User;
 import com.example.RestaurantApplication.module.user.service.UserService;
-import com.example.RestaurantApplication.module.user.utils.ResponseWrapper.ApiResponse;
+import com.example.RestaurantApplication.utils.ResponseWrapper.ApiResponse;
 
 import java.util.List;
 

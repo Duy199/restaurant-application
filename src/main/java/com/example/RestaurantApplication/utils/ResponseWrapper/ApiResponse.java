@@ -1,4 +1,4 @@
-package com.example.RestaurantApplication.module.user.utils.ResponseWrapper;
+package com.example.RestaurantApplication.utils.ResponseWrapper;
 
 public class ApiResponse<T> {
     private boolean success;

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.RestaurantApplication.module.user.model.User;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
-import com.example.RestaurantApplication.module.user.utils.Exceptions.BusinessException;
+import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
 @Service
 public class UserService {

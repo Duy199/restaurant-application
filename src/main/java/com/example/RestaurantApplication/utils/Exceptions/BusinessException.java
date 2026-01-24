@@ -1,4 +1,4 @@
-package com.example.RestaurantApplication.module.user.utils.Exceptions;
+package com.example.RestaurantApplication.utils.Exceptions;
 
 import org.springframework.http.HttpStatus;
 

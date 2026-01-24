@@ -1,4 +1,4 @@
-package com.example.RestaurantApplication.module.user.utils.Exceptions;
+package com.example.RestaurantApplication.utils.Exceptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -7,7 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.example.RestaurantApplication.module.user.utils.ResponseWrapper.ApiResponse;
+import com.example.RestaurantApplication.utils.ResponseWrapper.ApiResponse;
 
 
 @RestControllerAdvice
