@@ -14,7 +14,7 @@ import jakarta.persistence.FetchType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.example.RestaurantApplication.module.restaurant.model.RestaurantEntity;
+import com.example.RestaurantApplication.module.restaurant.model.Restaurant;
 import com.example.RestaurantApplication.module.user.model.enums.Role;
 import java.time.LocalDateTime;
 
@@ -48,7 +48,7 @@ public class User {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurant_id", insertable = false, updatable = false)
-    private RestaurantEntity restaurant;
+    private Restaurant restaurant;
     @Column(name = "restaurant_id")
     private Long restaurantId;
 

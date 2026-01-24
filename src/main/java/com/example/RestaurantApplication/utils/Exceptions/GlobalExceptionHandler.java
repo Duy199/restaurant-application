@@ -1,4 +1,5 @@
 package com.example.RestaurantApplication.utils.Exceptions;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.RestaurantApplication.utils.ResponseWrapper.ApiResponse;
+
 
 
 @RestControllerAdvice
@@ -25,9 +27,9 @@ public class GlobalExceptionHandler {
 
     // Handle Body Missing or Malformed JSON
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMissingBody() {
-        return ResponseEntity.badRequest()
-            .body(ApiResponse.error("Request body is missing or invalid JSON", "400", null));
+    public ResponseEntity<ApiResponse<Void>> handleMissingBody(HttpMessageNotReadableException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("Request body is missing or invalid JSON", "INVALID_JSON", null));
     }
 
 
@@ -40,8 +42,8 @@ public class GlobalExceptionHandler {
             .map(error -> error.getField() + ": " + error.getDefaultMessage())
             .findFirst()
             .orElse("Validation error");
-        return ResponseEntity.badRequest()
-            .body(ApiResponse.error(errorMessage, "400", null));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error(errorMessage, "VALIDATION_ERROR", null));
     }
 
     // Handle HTTP Method Not Supported
@@ -55,7 +57,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.error(
                         message,
-                        "405",
+                        "METHOD_NOT_ALLOWED",
                         null
                 ));
     }
