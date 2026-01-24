@@ -24,12 +24,10 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserService userService;
     private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserService userService, TokenBlacklistService tokenBlacklistService) {
+    public JwtAuthenticationFilter(JwtService jwtService, TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
-        this.userService = userService;
         this.tokenBlacklistService = tokenBlacklistService;
     }
 
