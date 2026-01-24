@@ -20,12 +20,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserService RestaurantApplication;
+    private final UserService userService;
     private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserService RestaurantApplication, TokenBlacklistService tokenBlacklistService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserService userService, TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
-        this.RestaurantApplication = RestaurantApplication;
+        this.userService = userService;
         this.tokenBlacklistService = tokenBlacklistService;
     }
 
@@ -115,7 +115,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(
                         username,
                         null,
-                        RestaurantApplication.getAuthorities()
+                        userService.getAuthorities()
                     );
 
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
