@@ -67,10 +67,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username;
         Role role;
         Long restaurantId;
+        Long userId;
         try {
             username = jwtService.extractUsername(token);
             role = jwtService.extractUserRole(token);
             restaurantId = jwtService.extractRestaurantId(token);
+            userId = jwtService.extractUserId(token);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
 
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -130,6 +132,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 details.put("userName", username);
                 details.put("role", role.name());
                 details.put("restaurant_id", restaurantId);  // Có thể null cho ADMIN
+                details.put("user_id", userId);
                 details.put("web_details", new WebAuthenticationDetailsSource().buildDetails(request));
 
                 auth.setDetails(details);

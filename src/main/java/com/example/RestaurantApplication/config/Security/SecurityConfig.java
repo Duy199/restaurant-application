@@ -51,6 +51,10 @@ public class SecurityConfig {
           .authorizeHttpRequests(auth -> auth
               .requestMatchers("/api/v1/auth/logout").authenticated()
               .requestMatchers("/api/v1/auth/**").permitAll()
+              .requestMatchers(HttpMethod.DELETE,"/api/v1/user/**").hasAuthority("ROLE_ADMIN")
+              .requestMatchers(HttpMethod.POST,"/api/v1/user/**").hasAuthority("ROLE_ADMIN")
+              .requestMatchers(HttpMethod.PUT,"/api/v1/user/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN", "ROLE_STAFF")
+              .requestMatchers(HttpMethod.PATCH,"/api/v1/user/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN", "ROLE_STAFF")
               .requestMatchers(HttpMethod.DELETE,"/api/v1/restaurant/**").hasAuthority("ROLE_ADMIN")
               .requestMatchers(HttpMethod.POST,"/api/v1/restaurant/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN")
               .requestMatchers(HttpMethod.PUT,"/api/v1/restaurant/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN")

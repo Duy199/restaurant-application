@@ -24,11 +24,12 @@ public class JwtService {
     }
     
 
-    public String generateToken(String username, Role role, Long restaurantId) {
+    public String generateToken(String username, Role role, Long restaurantId, Long userId) {
         return Jwts.builder()
             .setSubject(username)
             .claim("role", role.name())
             .claim("restaurantId", restaurantId)
+            .claim("userId", userId)
             .setId(UUID.randomUUID().toString())
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + props.getAccessTokenExp()))
@@ -37,11 +38,12 @@ public class JwtService {
     }
 
 
-    public String generateRefreshToken(String username, Role role, Long restaurantId) {
+    public String generateRefreshToken(String username, Role role, Long restaurantId, Long userId) {
         return Jwts.builder()
             .setSubject(username)
             .claim("role", role.name())
             .claim("restaurantId", restaurantId)
+            .claim("userId", userId)
             .setId(UUID.randomUUID().toString())
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + props.getRefreshTokenExp()))
@@ -72,6 +74,11 @@ public class JwtService {
 
     public Long extractRestaurantId(String token) {
         Integer value = (Integer) extractClaims(token).get("restaurantId");
+        return value != null ? value.longValue() : null;
+    }
+
+    public Long extractUserId(String token) {
+        Integer value = (Integer) extractClaims(token).get("userId");
         return value != null ? value.longValue() : null;
     }
 

@@ -76,6 +76,119 @@ public class UserService {
         return (Long) details.get("restaurant_id");
     }
 
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Map<?, ?> details = (Map<?, ?>) authentication.getDetails();
+        return (Long) details.get("user_id");
+    }
+
+    private String getCurrentUserRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getAuthorities().stream()
+            .findFirst()
+            .map(GrantedAuthority::getAuthority)
+            .orElse(null);
+    }
+
+    private boolean isAdmin() {
+        return "ROLE_ADMIN".equals(getCurrentUserRole());
+    }
+
+    public void updateUser(Long targetUserId, String username, String email, String password) {
+        Long currentUserId = getCurrentUserId();
+
+        // Non-admin can only update themselves
+        if (!isAdmin() && !currentUserId.equals(targetUserId)) {
+            throw new BusinessException("ACCESS_DENIED",
+                "You can only update your own profile",
+                HttpStatus.FORBIDDEN);
+        }
+
+        // Load user with filter applied (ensures same restaurant for non-admin)
+        User user = userRepository.findByIdFiltered(targetUserId)
+            .orElseThrow(() -> new BusinessException("USER_NOT_FOUND",
+                "User not found with id " + targetUserId,
+                HttpStatus.NOT_FOUND));
+
+        // Check username uniqueness if changed
+        if (!user.getUserName().equals(username) && userRepository.existsByUserName(username)) {
+            throw new BusinessException("USERNAME_EXISTS",
+                "Username already exists: " + username,
+                HttpStatus.CONFLICT);
+        }
+
+        // Check email uniqueness if changed
+        if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+            throw new BusinessException("EMAIL_EXISTS",
+                "Email already exists: " + email,
+                HttpStatus.CONFLICT);
+        }
+
+        // Update fields
+        user.setUserName(username);
+        user.setEmail(email);
+
+        // Update password only if provided
+        if (password != null && !password.isBlank()) {
+            user.setPassword(passwordEncoder.encode(password));
+        }
+
+        userRepository.save(user);
+    }
+
+    public void patchUser(Long targetUserId, String username, String email, String password) {
+        Long currentUserId = getCurrentUserId();
+
+        // Non-admin can only update themselves
+        if (!isAdmin() && !currentUserId.equals(targetUserId)) {
+            throw new BusinessException("ACCESS_DENIED",
+                "You can only update your own profile",
+                HttpStatus.FORBIDDEN);
+        }
+
+        // Load user with filter applied
+        User user = userRepository.findByIdFiltered(targetUserId)
+            .orElseThrow(() -> new BusinessException("USER_NOT_FOUND",
+                "User not found with id " + targetUserId,
+                HttpStatus.NOT_FOUND));
+
+        // Partial update - only update provided fields
+        if (username != null && !username.isBlank()) {
+            if (!user.getUserName().equals(username) && userRepository.existsByUserName(username)) {
+                throw new BusinessException("USERNAME_EXISTS",
+                    "Username already exists: " + username,
+                    HttpStatus.CONFLICT);
+            }
+            user.setUserName(username);
+        }
+
+        if (email != null && !email.isBlank()) {
+            if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+                throw new BusinessException("EMAIL_EXISTS",
+                    "Email already exists: " + email,
+                    HttpStatus.CONFLICT);
+            }
+            user.setEmail(email);
+        }
+
+        if (password != null && !password.isBlank()) {
+            user.setPassword(passwordEncoder.encode(password));
+        }
+
+        userRepository.save(user);
+    }
+
+    public void deleteUser(Long targetUserId) {
+
+        // Load user with filter applied (admin can access all restaurants)
+        User user = userRepository.findByIdFiltered(targetUserId)
+            .orElseThrow(() -> new BusinessException("USER_NOT_FOUND",
+                "User not found with id " + targetUserId,
+                HttpStatus.NOT_FOUND));
+
+        userRepository.delete(user);
+    }
+
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }

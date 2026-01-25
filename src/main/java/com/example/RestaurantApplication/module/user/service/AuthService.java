@@ -80,8 +80,8 @@ public class AuthService {
             throw new BusinessException("INVALID_CREDENTIALS", "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
-        String accessToken = jwtService.generateToken(user.getUserName(), user.getRole(), user.getRestaurantId());
-        String refreshToken = jwtService.generateRefreshToken(user.getUserName(), user.getRole(), user.getRestaurantId());
+        String accessToken = jwtService.generateToken(user.getUserName(), user.getRole(), user.getRestaurantId(), user.getId());
+        String refreshToken = jwtService.generateRefreshToken(user.getUserName(), user.getRole(), user.getRestaurantId(), user.getId());
 
         return new LoginResponse(user.getId(), user.getUserName(), accessToken, refreshToken);
     }
@@ -91,11 +91,13 @@ public class AuthService {
         String username;
         Role role;
         Long restaurantId;
+        Long userId;
         try {
-            Claims claims = jwtService.extractClaims(refreshToken); 
+            Claims claims = jwtService.extractClaims(refreshToken);
             username = claims.getSubject();
             role = Role.valueOf((String) claims.get("role"));
             restaurantId = claims.get("restaurantId", Long.class);
+            userId = claims.get("userId", Long.class);
         } catch (io.jsonwebtoken.security.SignatureException e) {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token signature is invalid", HttpStatus.UNAUTHORIZED);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
@@ -104,8 +106,8 @@ public class AuthService {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token is invalid", HttpStatus.UNAUTHORIZED);
         }
 
-        String newAccessToken = jwtService.generateToken(username, role, restaurantId);
-        String newRefreshToken = jwtService.generateRefreshToken(username, role, restaurantId);
+        String newAccessToken = jwtService.generateToken(username, role, restaurantId, userId);
+        String newRefreshToken = jwtService.generateRefreshToken(username, role, restaurantId, userId);
 
         return new RefreshTokenResponse(newAccessToken, newRefreshToken);
     }
