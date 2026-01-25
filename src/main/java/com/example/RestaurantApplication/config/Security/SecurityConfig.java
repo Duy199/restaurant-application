@@ -64,12 +64,12 @@ public class SecurityConfig {
               .requestMatchers(HttpMethod.PATCH, "/api/v1/user/**")
                   .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
 
-              // Restaurant module - Tenant-scoped
-              .requestMatchers(HttpMethod.GET, "/api/v1/restaurant")
+              // Restaurant module - Tenant-scoped (staff/manager can only access their own restaurant)
+              .requestMatchers(HttpMethod.GET, "/api/v1/restaurant", "/api/v1/restaurant/**")
                   .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
-              .requestMatchers(HttpMethod.PUT, "/api/v1/restaurant")
+              .requestMatchers(HttpMethod.PUT, "/api/v1/restaurant/**")
                   .hasAuthority("ROLE_MANAGER")
-              .requestMatchers(HttpMethod.PATCH, "/api/v1/restaurant")
+              .requestMatchers(HttpMethod.PATCH, "/api/v1/restaurant/**")
                   .hasAuthority("ROLE_MANAGER")
 
               // Orders module
