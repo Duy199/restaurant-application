@@ -1,6 +1,7 @@
 package com.example.RestaurantApplication.config.jwt;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -123,10 +124,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         authorities
                     );
-                auth.setDetails(Map.of("userName", username, 
-                                        "role", role.name(),
-                                        "restaurant_id", restaurantId, 
-                                        "web_details", new WebAuthenticationDetailsSource().buildDetails(request)));
+
+                // Dùng HashMap thay vì Map.of() để support null values (cho ADMIN users)
+                Map<String, Object> details = new HashMap<>();
+                details.put("userName", username);
+                details.put("role", role.name());
+                details.put("restaurant_id", restaurantId);  // Có thể null cho ADMIN
+                details.put("web_details", new WebAuthenticationDetailsSource().buildDetails(request));
+
+                auth.setDetails(details);
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }

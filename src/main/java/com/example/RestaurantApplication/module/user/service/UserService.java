@@ -38,7 +38,8 @@ public class UserService {
     }
 
     public User loadUserById(Long id) {
-        return userRepository.findById(id)
+        // Dùng findByIdFiltered() thay vì findById() để trigger Hibernate filter
+        return userRepository.findByIdFiltered(id)
             .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found with id " + id, HttpStatus.NOT_FOUND));
     }
 
