@@ -76,8 +76,9 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, String userName) {
-        return extractUsername(token).equals(userName)
-            && !extractClaims(token).getExpiration().before(new Date());
+        Claims claims = extractClaims(token);
+        return claims.getSubject().equals(userName)
+            && !claims.getExpiration().before(new Date());
     }
 
     public Claims extractClaims(String token) {
