@@ -80,7 +80,7 @@ public class JwtService {
             && !extractClaims(token).getExpiration().before(new Date());
     }
 
-    private Claims extractClaims(String token) {
+    public Claims extractClaims(String token) {
         return Jwts.parserBuilder()
             .setSigningKey(getKey())
             .build()

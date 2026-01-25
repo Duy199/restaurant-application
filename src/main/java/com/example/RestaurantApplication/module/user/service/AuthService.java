@@ -16,6 +16,8 @@ import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
+import io.jsonwebtoken.Claims;
+
 
 @Service
 public class AuthService {
@@ -88,10 +90,12 @@ public class AuthService {
 
         String username;
         Role role;
+        Long restaurantId;
         try {
-            username = jwtService.extractUsername(refreshToken);
-            role = jwtService.extractUserRole(refreshToken);
-            Long restaurantId = jwtService.extractRestaurantId(refreshToken);
+            Claims claims = jwtService.extractClaims(refreshToken); 
+            username = claims.getSubject();
+            role = Role.valueOf((String) claims.get("role"));
+            restaurantId = claims.get("restaurantId", Long.class);
         } catch (io.jsonwebtoken.security.SignatureException e) {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token signature is invalid", HttpStatus.UNAUTHORIZED);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
@@ -100,8 +104,8 @@ public class AuthService {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token is invalid", HttpStatus.UNAUTHORIZED);
         }
 
-        String newAccessToken = jwtService.generateToken(username, role, null);
-        String newRefreshToken = jwtService.generateRefreshToken(username, role, null);
+        String newAccessToken = jwtService.generateToken(username, role, restaurantId);
+        String newRefreshToken = jwtService.generateRefreshToken(username, role, restaurantId);
 
         return new RefreshTokenResponse(newAccessToken, newRefreshToken);
     }
