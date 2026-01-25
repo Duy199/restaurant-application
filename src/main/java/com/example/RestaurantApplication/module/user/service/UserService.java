@@ -82,29 +82,17 @@ public class UserService {
         return (Long) details.get("user_id");
     }
 
-    private String getCurrentUserRole() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-            .findFirst()
-            .map(GrantedAuthority::getAuthority)
-            .orElse(null);
-    }
-
-    private boolean isAdmin() {
-        return "ROLE_ADMIN".equals(getCurrentUserRole());
-    }
-
     public void updateUser(Long targetUserId, String username, String email, String password) {
         Long currentUserId = getCurrentUserId();
 
-        // Non-admin can only update themselves
-        if (!isAdmin() && !currentUserId.equals(targetUserId)) {
+        // Staff/Manager can only update themselves
+        if (!currentUserId.equals(targetUserId)) {
             throw new BusinessException("ACCESS_DENIED",
                 "You can only update your own profile",
                 HttpStatus.FORBIDDEN);
         }
 
-        // Load user with filter applied (ensures same restaurant for non-admin)
+        // Load user with filter applied (ensures same restaurant)
         User user = userRepository.findByIdFiltered(targetUserId)
             .orElseThrow(() -> new BusinessException("USER_NOT_FOUND",
                 "User not found with id " + targetUserId,
@@ -139,8 +127,8 @@ public class UserService {
     public void patchUser(Long targetUserId, String username, String email, String password) {
         Long currentUserId = getCurrentUserId();
 
-        // Non-admin can only update themselves
-        if (!isAdmin() && !currentUserId.equals(targetUserId)) {
+        // Staff/Manager can only update themselves
+        if (!currentUserId.equals(targetUserId)) {
             throw new BusinessException("ACCESS_DENIED",
                 "You can only update your own profile",
                 HttpStatus.FORBIDDEN);

@@ -49,18 +49,35 @@ public class SecurityConfig {
               .accessDeniedHandler(deniedHandler)
           )
           .authorizeHttpRequests(auth -> auth
+              // Authentication endpoints
               .requestMatchers("/api/v1/auth/logout").authenticated()
               .requestMatchers("/api/v1/auth/**").permitAll()
-              .requestMatchers(HttpMethod.DELETE,"/api/v1/user/**").hasAuthority("ROLE_ADMIN")
-              .requestMatchers(HttpMethod.POST,"/api/v1/user/**").hasAuthority("ROLE_ADMIN")
-              .requestMatchers(HttpMethod.PUT,"/api/v1/user/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN", "ROLE_STAFF")
-              .requestMatchers(HttpMethod.PATCH,"/api/v1/user/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN", "ROLE_STAFF")
-              .requestMatchers(HttpMethod.DELETE,"/api/v1/restaurant/**").hasAuthority("ROLE_ADMIN")
-              .requestMatchers(HttpMethod.POST,"/api/v1/restaurant/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN")
-              .requestMatchers(HttpMethod.PUT,"/api/v1/restaurant/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN")
-              .requestMatchers(HttpMethod.PATCH,"/api/v1/restaurant/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN")
-              .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasAnyAuthority("ROLE_MANAGER","ROLE_ADMIN")
-              .requestMatchers(HttpMethod.GET,"/api/v1/orders/**").hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF","ROLE_ADMIN")
+
+              // Admin module - Global management (ADMIN only)
+              .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
+
+              // User module - Tenant-scoped (Staff/Manager can view colleagues, update themselves)
+              .requestMatchers(HttpMethod.GET, "/api/v1/user/**")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
+              .requestMatchers(HttpMethod.PUT, "/api/v1/user/**")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
+              .requestMatchers(HttpMethod.PATCH, "/api/v1/user/**")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
+
+              // Restaurant module - Tenant-scoped
+              .requestMatchers(HttpMethod.GET, "/api/v1/restaurant")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
+              .requestMatchers(HttpMethod.PUT, "/api/v1/restaurant")
+                  .hasAuthority("ROLE_MANAGER")
+              .requestMatchers(HttpMethod.PATCH, "/api/v1/restaurant")
+                  .hasAuthority("ROLE_MANAGER")
+
+              // Orders module
+              .requestMatchers(HttpMethod.POST, "/api/v1/orders/**")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_ADMIN")
+              .requestMatchers(HttpMethod.GET, "/api/v1/orders/**")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF", "ROLE_ADMIN")
+
               .anyRequest().authenticated()
           )
           .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

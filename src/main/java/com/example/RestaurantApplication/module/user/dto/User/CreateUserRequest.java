@@ -11,7 +11,7 @@ public class CreateUserRequest {
     @NotBlank(message = "Password is required")
     private String password;
     @NotBlank(message = "Role is required")
-    @Pattern(regexp = "ROLE_MANAGER|ROLE_STAFF", message = "Role must be either MANAGER or STAFF")
+    @Pattern(regexp = "ROLE_ADMIN|ROLE_MANAGER|ROLE_STAFF", message = "Role must be ADMIN, MANAGER or STAFF")
     private String role;
     // Getters and Setters
 
