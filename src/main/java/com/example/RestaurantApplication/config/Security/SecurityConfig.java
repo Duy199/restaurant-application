@@ -1,7 +1,9 @@
 package com.example.RestaurantApplication.config.Security;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,10 +26,20 @@ public class SecurityConfig {
   }
 
   @Bean
+  public FilterRegistrationBean<OpenEntityManagerInViewFilter> openEntityManagerInViewFilter() {
+      FilterRegistrationBean<OpenEntityManagerInViewFilter> registrationBean = new FilterRegistrationBean<>();
+      OpenEntityManagerInViewFilter filter = new OpenEntityManagerInViewFilter();
+      registrationBean.setFilter(filter);
+      registrationBean.setOrder(-100); // Chạy trước các filter khác
+      return registrationBean;
+  }
+
+  @Bean
   SecurityFilterChain filterChain(HttpSecurity http,
           JwtAuthenticationEntryPoint entryPoint,
           JwtAccessDeniedHandler deniedHandler,
-          JwtAuthenticationFilter jwtFilter
+          JwtAuthenticationFilter jwtFilter,
+          TenantHibernateFilter tenantFilter
   ) throws Exception {
 
       return http
@@ -48,6 +60,7 @@ public class SecurityConfig {
               .anyRequest().authenticated()
           )
           .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+          .addFilterAfter(tenantFilter, JwtAuthenticationFilter.class)
           .build();
   }
 

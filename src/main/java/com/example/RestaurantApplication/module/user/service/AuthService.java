@@ -53,7 +53,7 @@ public class AuthService {
         
         user.setUserName(userName);
         user.setEmail(email);
-        user.setRole(Role.ROLE_USER);
+        user.setRole(Role.ROLE_STAFF);
         
         // Encode the password before saving
         String encodedPassword = passwordEncoder.encode(password);
@@ -78,8 +78,8 @@ public class AuthService {
             throw new BusinessException("INVALID_CREDENTIALS", "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
-        String accessToken = jwtService.generateToken(user.getUserName(), user.getRole());
-        String refreshToken = jwtService.generateRefreshToken(user.getUserName(), user.getRole());
+        String accessToken = jwtService.generateToken(user.getUserName(), user.getRole(), user.getRestaurantId());
+        String refreshToken = jwtService.generateRefreshToken(user.getUserName(), user.getRole(), user.getRestaurantId());
 
         return new LoginResponse(user.getId(), user.getUserName(), accessToken, refreshToken);
     }
@@ -91,6 +91,7 @@ public class AuthService {
         try {
             username = jwtService.extractUsername(refreshToken);
             role = jwtService.extractUserRole(refreshToken);
+            Long restaurantId = jwtService.extractRestaurantId(refreshToken);
         } catch (io.jsonwebtoken.security.SignatureException e) {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token signature is invalid", HttpStatus.UNAUTHORIZED);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
@@ -99,8 +100,8 @@ public class AuthService {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token is invalid", HttpStatus.UNAUTHORIZED);
         }
 
-        String newAccessToken = jwtService.generateToken(username, role);
-        String newRefreshToken = jwtService.generateRefreshToken(username, role);
+        String newAccessToken = jwtService.generateToken(username, role, null);
+        String newRefreshToken = jwtService.generateRefreshToken(username, role, null);
 
         return new RefreshTokenResponse(newAccessToken, newRefreshToken);
     }

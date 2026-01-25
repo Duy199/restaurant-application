@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.RestaurantApplication.module.restaurant.repository.RestaurantRepository;
 import com.example.RestaurantApplication.module.user.model.User;
+import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
@@ -21,7 +23,8 @@ public class UserService {
     private UserRepository userRepository;
     @Autowired
     private RestaurantRepository restaurantRepository;
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     public User loadUserByUsername(String username) {
         return userRepository.findByUserName(username)
             .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found with username " + username, HttpStatus.NOT_FOUND));
@@ -51,7 +54,8 @@ public class UserService {
         user.setRestaurantId(restaurantId);
         user.setUserName(userName);
         user.setEmail(email);
-        user.setPassword(password);
+        user.setRole(Role.valueOf(role));
+        user.setPassword(passwordEncoder.encode(password));
         // Set role accordingly
         userRepository.save(user);
     }

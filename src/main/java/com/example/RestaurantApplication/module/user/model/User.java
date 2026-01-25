@@ -13,6 +13,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.FetchType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import com.example.RestaurantApplication.module.restaurant.model.Restaurant;
 import com.example.RestaurantApplication.module.user.model.enums.Role;
@@ -21,6 +24,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "rid", type = Long.class))
+@Filter(name = "tenantFilter", condition = "restaurant_id = :rid")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
