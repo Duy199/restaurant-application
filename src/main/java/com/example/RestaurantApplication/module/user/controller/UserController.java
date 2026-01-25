@@ -42,7 +42,7 @@ public class UserController {
     @PostMapping("")
     public ResponseEntity<ApiResponse<String>> postMethodName(@Valid @RequestBody CreateUserRequest entity) {
         //TODO: process POST request
-        userService.addNewUser(entity.getRestaurantId(), entity.getUsername(), entity.getEmail(), entity.getPassword(), entity.getRole());
+        userService.addNewUser(entity.getUsername(), entity.getEmail(), entity.getPassword(), entity.getRole());
         return ResponseEntity.ok(ApiResponse.success("User created successfully", "200", null));
     }
     
