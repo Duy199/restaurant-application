@@ -13,7 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
 import com.example.RestaurantApplication.module.user.model.enums.Role;
-import com.example.RestaurantApplication.module.user.service.UserService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
