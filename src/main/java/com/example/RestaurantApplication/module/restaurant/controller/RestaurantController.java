@@ -4,15 +4,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.RestaurantApplication.module.restaurant.dto.RestaurantCreate;
+import com.example.RestaurantApplication.module.restaurant.dto.RestaurantDetail;
+import com.example.RestaurantApplication.module.restaurant.model.Restaurant;
 import com.example.RestaurantApplication.module.restaurant.service.RestaurantService;
 import com.example.RestaurantApplication.utils.ResponseWrapper.ApiResponse;
 
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 @RestController
@@ -20,6 +27,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class RestaurantController {
     @Autowired
     private RestaurantService restaurantService;
+    @GetMapping("")
+    public ResponseEntity<ApiResponse<List<RestaurantDetail>>> getRestaurantList() {
+        List <Restaurant> restaurants = restaurantService.getAllRestaurants();
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                "Restaurant list fetched successfully",
+                "200",
+                restaurants.stream().map(restaurant -> new RestaurantDetail(restaurant.getId(),restaurant.getName(), restaurant.getAddress(), restaurant.getCode())).toList()
+            ));
+    }
+    
     @PostMapping("")
     public ResponseEntity<ApiResponse<String>> addNewRestaurant(@Valid @RequestBody RestaurantCreate entity) {
         restaurantService.registerNewRestaurant(entity.getName(), entity.getAddress());
