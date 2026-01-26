@@ -28,6 +28,9 @@ public class UserService {
     private RestaurantRepository restaurantRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private AuthService authService;
+
     public User loadUserByUsername(String username) {
         return userRepository.findByUserName(username)
             .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found with username " + username, HttpStatus.NOT_FOUND));
@@ -117,11 +120,18 @@ public class UserService {
         user.setEmail(email);
 
         // Update password only if provided
+        boolean passwordChanged = false;
         if (password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(password));
+            passwordChanged = true;
         }
 
         userRepository.save(user);
+
+        // Revoke all tokens if password changed (force re-login from all devices)
+        if (passwordChanged) {
+            authService.revokeAllUserTokens(targetUserId);
+        }
     }
 
     public void patchUser(Long targetUserId, String username, String email, String password) {
@@ -159,11 +169,18 @@ public class UserService {
             user.setEmail(email);
         }
 
+        boolean passwordChanged = false;
         if (password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(password));
+            passwordChanged = true;
         }
 
         userRepository.save(user);
+
+        // Revoke all tokens if password changed (force re-login from all devices)
+        if (passwordChanged) {
+            authService.revokeAllUserTokens(targetUserId);
+        }
     }
 
     public void deleteUser(Long targetUserId) {

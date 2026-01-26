@@ -72,6 +72,11 @@ public class JwtService {
         return extractClaims(token).getExpiration();
     }
 
+    public long extractIssuedAt(String token) {
+        Date issuedAt = extractClaims(token).getIssuedAt();
+        return issuedAt != null ? issuedAt.getTime() : 0;
+    }
+
     public Long extractRestaurantId(String token) {
         Integer value = (Integer) extractClaims(token).get("restaurantId");
         return value != null ? value.longValue() : null;

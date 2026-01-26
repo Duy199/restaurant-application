@@ -100,7 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Check if the access token is not blacklisted
+        // Check if the access token is not blacklisted (JTI check)
         String jti = jwtService.extractJtiString(token);
         if (tokenBlacklistService.isTokenBlacklisted(jti)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -114,7 +114,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             """);
             return;
         }
-        
+
+        // Check if token was issued before user revocation (timestamp check)
+        Long revokedAt = tokenBlacklistService.getUserRevokedTimestamp(userId);
+        if (revokedAt != null) {
+            long tokenIssuedAt = jwtService.extractIssuedAt(token);
+            if (tokenIssuedAt < revokedAt) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("""
+                {
+                "success": false,
+                "code": "USER_TOKENS_REVOKED",
+                "message": "All tokens for this user have been revoked. Please login again."
+                }
+                """);
+                return;
+            }
+        }
+
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 

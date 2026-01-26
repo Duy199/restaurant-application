@@ -80,6 +80,9 @@ public class AuthService {
             throw new BusinessException("INVALID_CREDENTIALS", "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
+        // No need to clear revocation - timestamp approach handles this automatically
+        // New tokens will have iat > revoked_at, so they will pass
+
         String accessToken = jwtService.generateToken(user.getUserName(), user.getRole(), user.getRestaurantId(), user.getId());
         String refreshToken = jwtService.generateRefreshToken(user.getUserName(), user.getRole(), user.getRestaurantId(), user.getId());
 
@@ -133,5 +136,16 @@ public class AuthService {
             throw new BusinessException("REFRESH_TOKEN_REVOKED", "Refresh token has been revoked", HttpStatus.UNAUTHORIZED);
         }
     }
+
+    /**
+     * Revoke all tokens for a user (force logout from all devices).
+     * Used when password is changed or admin wants to force logout.
+     *
+     * @param userId The user ID to revoke tokens for
+     */
+    public void revokeAllUserTokens(Long userId) {
+        // TTL = refresh token expiration time (7 days)
+        long ttl = jwtService.getRefreshTokenExpiration();
+        tokenBlacklistService.revokeAllUserTokens(userId, ttl);
+    }
 }
-    

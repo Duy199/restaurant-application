@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.example.RestaurantApplication.module.user.model.User;
 import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
+import com.example.RestaurantApplication.module.user.service.AuthService;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
 @Service
@@ -20,6 +21,9 @@ public class AdminUserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthService authService;
 
     /**
      * Load all users from all restaurants.
@@ -95,11 +99,18 @@ public class AdminUserService {
         user.setEmail(email);
 
         // Update password only if provided
+        boolean passwordChanged = false;
         if (password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(password));
+            passwordChanged = true;
         }
 
         userRepository.save(user);
+
+        // Revoke all tokens if password changed (force re-login from all devices)
+        if (passwordChanged) {
+            authService.revokeAllUserTokens(userId);
+        }
     }
 
     /**
@@ -130,11 +141,18 @@ public class AdminUserService {
             user.setEmail(email);
         }
 
+        boolean passwordChanged = false;
         if (password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(password));
+            passwordChanged = true;
         }
 
         userRepository.save(user);
+
+        // Revoke all tokens if password changed (force re-login from all devices)
+        if (passwordChanged) {
+            authService.revokeAllUserTokens(userId);
+        }
     }
 
     /**
