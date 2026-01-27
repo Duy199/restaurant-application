@@ -72,6 +72,10 @@ public class SecurityConfig {
               .requestMatchers(HttpMethod.PATCH, "/api/v1/restaurant/**")
                   .hasAuthority("ROLE_MANAGER")
 
+              // Ingredient module - Master data (Staff/Manager can only view)
+              .requestMatchers(HttpMethod.GET, "/api/v1/ingredient/**")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
+
               // Orders module
               .requestMatchers(HttpMethod.POST, "/api/v1/orders/**")
                   .hasAnyAuthority("ROLE_MANAGER", "ROLE_ADMIN")
