@@ -61,7 +61,7 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<String>> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request) {
-        adminUserService.updateUserGlobal(id, request.getUsername(), request.getEmail(), request.getPassword());
+        adminUserService.updateUserGlobal(id, request.getUsername(), request.getEmail(), request.getPassword(), request.getRole());
         return ResponseEntity.ok(ApiResponse.success("User updated successfully", "USER_UPDATED", null));
     }
 
@@ -69,7 +69,7 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<String>> patchUser(
             @PathVariable Long id,
             @Valid @RequestBody PatchUserRequest request) {
-        adminUserService.patchUserGlobal(id, request.getUsername(), request.getEmail(), request.getPassword());
+        adminUserService.patchUserGlobal(id, request.getUsername(), request.getEmail(), request.getPassword(), request.getRole());
         return ResponseEntity.ok(ApiResponse.success("User updated successfully", "USER_UPDATED", null));
     }
 

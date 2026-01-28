@@ -74,7 +74,7 @@ public class AdminUserService {
     /**
      * Update user globally (can update any user from any restaurant).
      */
-    public void updateUserGlobal(Long userId, String username, String email, String password) {
+    public void updateUserGlobal(Long userId, String username, String email, String password, String role) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new BusinessException("USER_NOT_FOUND",
                 "User not found with id " + userId,
@@ -97,9 +97,16 @@ public class AdminUserService {
         // Update fields
         user.setUserName(username);
         user.setEmail(email);
+        user.setRole(Role.valueOf(role));
 
         // Update password only if provided
         boolean passwordChanged = false;
+        boolean roleChanged = false;
+
+        if (!user.getRole().toString().equals(role)) {
+            roleChanged = true;
+        }
+
         if (password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(password));
             passwordChanged = true;
@@ -108,7 +115,7 @@ public class AdminUserService {
         userRepository.save(user);
 
         // Revoke all tokens if password changed (force re-login from all devices)
-        if (passwordChanged) {
+        if (passwordChanged || roleChanged) {
             authService.revokeAllUserTokens(userId);
         }
     }
@@ -116,7 +123,7 @@ public class AdminUserService {
     /**
      * Partially update user globally.
      */
-    public void patchUserGlobal(Long userId, String username, String email, String password) {
+    public void patchUserGlobal(Long userId, String username, String email, String password, String role) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new BusinessException("USER_NOT_FOUND",
                 "User not found with id " + userId,
@@ -141,6 +148,23 @@ public class AdminUserService {
             user.setEmail(email);
         }
 
+        boolean roleChanged = false;
+        if (role != null && !role.isBlank()) {
+            Role newRole;
+            try {
+                newRole = Role.valueOf(role);
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException("INVALID_ROLE",
+                    "Role must be one of: USER, ADMIN, MANAGER",
+                    HttpStatus.BAD_REQUEST);
+            }
+
+            if (!user.getRole().equals(newRole)) {
+                user.setRole(newRole);
+                roleChanged = true;
+            }
+        }
+
         boolean passwordChanged = false;
         if (password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(password));
@@ -150,7 +174,7 @@ public class AdminUserService {
         userRepository.save(user);
 
         // Revoke all tokens if password changed (force re-login from all devices)
-        if (passwordChanged) {
+        if (passwordChanged || roleChanged) {
             authService.revokeAllUserTokens(userId);
         }
     }
