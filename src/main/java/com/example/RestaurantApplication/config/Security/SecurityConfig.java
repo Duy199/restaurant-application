@@ -76,11 +76,13 @@ public class SecurityConfig {
               .requestMatchers(HttpMethod.GET, "/api/v1/ingredient/**")
                   .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
 
-              // Orders module
-              .requestMatchers(HttpMethod.POST, "/api/v1/orders/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_ADMIN")
-              .requestMatchers(HttpMethod.GET, "/api/v1/orders/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF", "ROLE_ADMIN")
+              // Order module - Tenant-scoped (Staff/Manager can view orders)
+              .requestMatchers(HttpMethod.GET, "/api/v1/order/**")
+                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
+
+              // Manager Order module - Manager can create orders
+              .requestMatchers(HttpMethod.POST, "/api/v1/manager/order/**")
+                  .hasAuthority("ROLE_MANAGER")
 
               .anyRequest().authenticated()
           )

@@ -1,6 +1,7 @@
 package com.example.RestaurantApplication.module.user.dto.User;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
 
 public class PatchUserRequest {
     // All fields are optional for PATCH (partial update)
@@ -11,6 +12,9 @@ public class PatchUserRequest {
     private String email;
 
     private String password;
+
+    @Pattern(regexp = "ROLE_STAFF|ROLE_ADMIN|ROLE_MANAGER", message = "Role must be either USER or ADMIN or MANAGER")
+    private String role;
 
     // Getters and Setters
     public String getUsername() {
@@ -35,5 +39,12 @@ public class PatchUserRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+    public void setRole(String role) {
+        this.role = role;
     }
 }
