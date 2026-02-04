@@ -13,6 +13,11 @@ public class CreateUserRequest {
     @NotBlank(message = "Role is required")
     @Pattern(regexp = "ROLE_ADMIN|ROLE_MANAGER|ROLE_STAFF", message = "Role must be ADMIN, MANAGER or STAFF")
     private String role;
+
+    // Restaurant ID - Required for MANAGER/STAFF, null for ADMIN
+    // Validated in service layer based on role
+    private Long restaurantId;
+
     // Getters and Setters
 
     public String getUsername() {
@@ -44,5 +49,13 @@ public class CreateUserRequest {
     }
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Long getRestaurantId() {
+        return restaurantId;
+    }
+
+    public void setRestaurantId(Long restaurantId) {
+        this.restaurantId = restaurantId;
     }
 }

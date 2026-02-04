@@ -22,4 +22,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdFiltered(@Param("id") Long id);
+
+    /**
+     * Find all users with a specific role ID.
+     * Used for token revocation when role is updated/deleted.
+     */
+    @Query("SELECT u FROM User u WHERE u.userRoleId = :roleId")
+    java.util.List<User> findByUserRoleId(@Param("roleId") Long roleId);
 }

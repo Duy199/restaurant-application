@@ -14,8 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.RestaurantApplication.module.restaurant.repository.RestaurantRepository;
+import com.example.RestaurantApplication.module.role.model.UserRole;
+import com.example.RestaurantApplication.module.role.repository.UserRoleRepository;
 import com.example.RestaurantApplication.module.user.model.User;
-import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
@@ -24,6 +25,8 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
     @Autowired
     private RestaurantRepository restaurantRepository;
     @Autowired
@@ -63,12 +66,18 @@ public class UserService {
             throw new BusinessException("RESTAURANT_NOT_FOUND", "Restaurant not found with id " + restaurantId, HttpStatus.NOT_FOUND);
         }
 
+        // Find role by name
+        UserRole userRole = userRoleRepository.findByNameActive(role)
+            .orElseThrow(() -> new BusinessException("ROLE_NOT_FOUND",
+                "Role not found: " + role,
+                HttpStatus.NOT_FOUND));
+
         // Create and save user
         User user = new User();
         user.setRestaurantId(restaurantId);
         user.setUserName(userName);
         user.setEmail(email);
-        user.setRole(Role.valueOf(role));
+        user.setUserRoleId(userRole.getId());
         user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
     }

@@ -52,7 +52,8 @@ public class AdminUserController {
 
     @PostMapping("")
     public ResponseEntity<ApiResponse<String>> createUser(@Valid @RequestBody CreateUserRequest request) {
-        adminUserService.createUser(request.getUsername(), request.getEmail(), request.getPassword(), request.getRole());
+        adminUserService.createUser(request.getUsername(), request.getEmail(), request.getPassword(),
+            request.getRole(), request.getRestaurantId());
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("User created successfully", "USER_CREATED", null));
     }

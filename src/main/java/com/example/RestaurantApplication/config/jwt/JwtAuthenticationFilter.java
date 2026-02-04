@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
-import com.example.RestaurantApplication.module.user.model.enums.Role;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -65,12 +64,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String username;
-        Role role;
+        String roleName;
         Long restaurantId;
         Long userId;
         try {
             username = jwtService.extractUsername(token);
-            role = jwtService.extractUserRole(token);
+            roleName = jwtService.extractUserRole(token);
             restaurantId = jwtService.extractRestaurantId(token);
             userId = jwtService.extractUserId(token);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
@@ -137,7 +136,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             if (jwtService.isTokenValid(token, username)) {
-                var authorities = List.of(new SimpleGrantedAuthority(role.name()));
+                var authorities = List.of(new SimpleGrantedAuthority(roleName));
                 UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
                         username,
@@ -148,7 +147,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Dùng HashMap thay vì Map.of() để support null values (cho ADMIN users)
                 Map<String, Object> details = new HashMap<>();
                 details.put("userName", username);
-                details.put("role", role.name());
+                details.put("role", roleName);
                 details.put("restaurant_id", restaurantId);  // Có thể null cho ADMIN
                 details.put("user_id", userId);
                 details.put("web_details", new WebAuthenticationDetailsSource().buildDetails(request));

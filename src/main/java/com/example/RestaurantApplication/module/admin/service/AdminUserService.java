@@ -7,8 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.RestaurantApplication.module.role.model.UserRole;
+import com.example.RestaurantApplication.module.role.repository.UserRoleRepository;
 import com.example.RestaurantApplication.module.user.model.User;
-import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
 import com.example.RestaurantApplication.module.user.service.AuthService;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
@@ -18,6 +19,9 @@ public class AdminUserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -46,9 +50,9 @@ public class AdminUserService {
     }
 
     /**
-     * Create a new user. Admin must specify the restaurant_id for the user.
+     * Create a new user. Admin must specify the restaurant_id for MANAGER/STAFF users.
      */
-    public void createUser(String userName, String email, String password, String role) {
+    public void createUser(String userName, String email, String password, String role, Long restaurantId) {
         // Validate username and email uniqueness
         if (userRepository.existsByUserName(userName)) {
             throw new BusinessException("USERNAME_EXISTS",
@@ -61,11 +65,35 @@ public class AdminUserService {
                 HttpStatus.CONFLICT);
         }
 
-        // Create user without restaurant_id (or add it as parameter later if needed)
+        // Find role by name
+        UserRole userRole = userRoleRepository.findByNameActive(role)
+            .orElseThrow(() -> new BusinessException("ROLE_NOT_FOUND",
+                "Role not found: " + role,
+                HttpStatus.NOT_FOUND));
+
+        // Validate restaurantId based on role
+        if ("ROLE_ADMIN".equals(role)) {
+            // ADMIN must NOT have restaurantId
+            if (restaurantId != null) {
+                throw new BusinessException("INVALID_RESTAURANT_ID",
+                    "ROLE_ADMIN users cannot be assigned to a restaurant",
+                    HttpStatus.BAD_REQUEST);
+            }
+        } else {
+            // MANAGER/STAFF must have restaurantId
+            if (restaurantId == null) {
+                throw new BusinessException("RESTAURANT_ID_REQUIRED",
+                    "Restaurant ID is required for " + role + " users",
+                    HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        // Create user with restaurant_id
         User user = new User();
         user.setUserName(userName);
         user.setEmail(email);
-        user.setRole(Role.valueOf(role));
+        user.setUserRoleId(userRole.getId());
+        user.setRestaurantId(restaurantId);
         user.setPassword(passwordEncoder.encode(password));
 
         userRepository.save(user);
@@ -94,16 +122,22 @@ public class AdminUserService {
                 HttpStatus.CONFLICT);
         }
 
+        // Find new role by name
+        UserRole newUserRole = userRoleRepository.findByNameActive(role)
+            .orElseThrow(() -> new BusinessException("ROLE_NOT_FOUND",
+                "Role not found: " + role,
+                HttpStatus.NOT_FOUND));
+
         // Update fields
         user.setUserName(username);
         user.setEmail(email);
-        user.setRole(Role.valueOf(role));
 
         // Update password only if provided
         boolean passwordChanged = false;
         boolean roleChanged = false;
 
-        if (!user.getRole().toString().equals(role)) {
+        if (!user.getUserRoleId().equals(newUserRole.getId())) {
+            user.setUserRoleId(newUserRole.getId());
             roleChanged = true;
         }
 
@@ -150,17 +184,13 @@ public class AdminUserService {
 
         boolean roleChanged = false;
         if (role != null && !role.isBlank()) {
-            Role newRole;
-            try {
-                newRole = Role.valueOf(role);
-            } catch (IllegalArgumentException e) {
-                throw new BusinessException("INVALID_ROLE",
-                    "Role must be one of: USER, ADMIN, MANAGER",
-                    HttpStatus.BAD_REQUEST);
-            }
+            UserRole newUserRole = userRoleRepository.findByNameActive(role)
+                .orElseThrow(() -> new BusinessException("ROLE_NOT_FOUND",
+                    "Role not found: " + role,
+                    HttpStatus.NOT_FOUND));
 
-            if (!user.getRole().equals(newRole)) {
-                user.setRole(newRole);
+            if (!user.getUserRoleId().equals(newUserRole.getId())) {
+                user.setUserRoleId(newUserRole.getId());
                 roleChanged = true;
             }
         }

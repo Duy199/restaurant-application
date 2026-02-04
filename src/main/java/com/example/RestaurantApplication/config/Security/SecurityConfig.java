@@ -2,7 +2,6 @@ package com.example.RestaurantApplication.config.Security;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -39,7 +38,8 @@ public class SecurityConfig {
           JwtAuthenticationEntryPoint entryPoint,
           JwtAccessDeniedHandler deniedHandler,
           JwtAuthenticationFilter jwtFilter,
-          TenantHibernateFilter tenantFilter
+          TenantHibernateFilter tenantFilter,
+          DynamicAuthorizationFilter dynamicAuthFilter
   ) throws Exception {
 
       return http
@@ -53,41 +53,15 @@ public class SecurityConfig {
               .requestMatchers("/api/v1/auth/logout").authenticated()
               .requestMatchers("/api/v1/auth/**").permitAll()
 
-              // Admin module - Global management (ADMIN only)
+              // Admin module - Global management (ADMIN only, hardcoded)
               .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
 
-              // User module - Tenant-scoped (Staff/Manager can view colleagues, update themselves)
-              .requestMatchers(HttpMethod.GET, "/api/v1/user/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
-              .requestMatchers(HttpMethod.PUT, "/api/v1/user/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
-              .requestMatchers(HttpMethod.PATCH, "/api/v1/user/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
-
-              // Restaurant module - Tenant-scoped (staff/manager can only access their own restaurant)
-              .requestMatchers(HttpMethod.GET, "/api/v1/restaurant", "/api/v1/restaurant/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
-              .requestMatchers(HttpMethod.PUT, "/api/v1/restaurant/**")
-                  .hasAuthority("ROLE_MANAGER")
-              .requestMatchers(HttpMethod.PATCH, "/api/v1/restaurant/**")
-                  .hasAuthority("ROLE_MANAGER")
-
-              // Ingredient module - Master data (Staff/Manager can only view)
-              .requestMatchers(HttpMethod.GET, "/api/v1/ingredient/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
-
-              // Order module - Tenant-scoped (Staff/Manager can view orders)
-              .requestMatchers(HttpMethod.GET, "/api/v1/order/**")
-                  .hasAnyAuthority("ROLE_MANAGER", "ROLE_STAFF")
-
-              // Manager Order module - Manager can create orders
-              .requestMatchers(HttpMethod.POST, "/api/v1/manager/order/**")
-                  .hasAuthority("ROLE_MANAGER")
-
+              // All other endpoints - authenticated users with dynamic permission checking
               .anyRequest().authenticated()
           )
           .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
           .addFilterAfter(tenantFilter, JwtAuthenticationFilter.class)
+          .addFilterAfter(dynamicAuthFilter, TenantHibernateFilter.class)
           .build();
   }
 

@@ -4,7 +4,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.RestaurantApplication.module.user.dto.Login.LoginRequest;
 import com.example.RestaurantApplication.module.user.dto.Login.LoginResponse;
-import com.example.RestaurantApplication.module.user.dto.Register.RegisterRequest;
 import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenRequest;
 import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenResponse;
 import com.example.RestaurantApplication.module.user.service.AuthService;
@@ -31,16 +30,6 @@ public class AuthController {
     @Autowired
     AuthService authService;
 
-
-    @PostMapping("register")
-    public ResponseEntity <ApiResponse<String>> register(@Valid @RequestBody RegisterRequest user) {
-        
-        // Call the AuthService to register the user
-        authService.registerUser(user.getUsername(), user.getEmail(), user.getPassword());
-        
-        // Return a success response
-        return ResponseEntity.ok(ApiResponse.success("User registered successfully", "200",  null));
-    }
 
     @PostMapping("login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {

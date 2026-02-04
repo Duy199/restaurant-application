@@ -9,10 +9,11 @@ import org.springframework.stereotype.Service;
 
 import com.example.RestaurantApplication.config.jwt.JwtService;
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.module.role.model.UserRole;
+import com.example.RestaurantApplication.module.role.repository.UserRoleRepository;
 import com.example.RestaurantApplication.module.user.dto.Login.LoginResponse;
 import com.example.RestaurantApplication.module.user.dto.Token.RefreshTokenResponse;
 import com.example.RestaurantApplication.module.user.model.User;
-import com.example.RestaurantApplication.module.user.model.enums.Role;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
@@ -26,12 +27,15 @@ public class AuthService {
     private UserRepository userRepository;
 
     @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private final JwtService jwtService;
 
     private final TokenBlacklistService tokenBlacklistService;
-    
+
     public AuthService(
         JwtService jwtService,
         TokenBlacklistService tokenBlacklistService
@@ -40,36 +44,6 @@ public class AuthService {
         this.tokenBlacklistService = tokenBlacklistService;
     }
 
-
-    public User registerUser(String userName, String email, String password) {
-        // Registration logic here
-        User user = new User();
-        
-        if (userRepository.existsByUserName(userName)) {
-            throw new BusinessException("USER_ALREADY_EXISTS", "Username already exists", HttpStatus.CONFLICT);
-        }
-
-        if (userRepository.existsByEmail(email)) {
-            throw new BusinessException("EMAIL_ALREADY_EXISTS", "Email already exists", HttpStatus.CONFLICT);
-        }
-        
-        user.setUserName(userName);
-        user.setEmail(email);
-        user.setRole(Role.ROLE_STAFF);
-        
-        // Encode the password before saving
-        String encodedPassword = passwordEncoder.encode(password);
-        user.setPassword(encodedPassword);
-        
-        // Save the user to the database
-        try {
-            userRepository.save(user);
-        } catch (Exception e) {
-            throw new RuntimeException("Error saving user: " + e.getMessage());
-        }
-        
-        return user;
-    }
 
     public LoginResponse authenticateUser(String userName, String password) {
         // Authentication logic here
@@ -83,8 +57,14 @@ public class AuthService {
         // No need to clear revocation - timestamp approach handles this automatically
         // New tokens will have iat > revoked_at, so they will pass
 
-        String accessToken = jwtService.generateToken(user.getUserName(), user.getRole(), user.getRestaurantId(), user.getId());
-        String refreshToken = jwtService.generateRefreshToken(user.getUserName(), user.getRole(), user.getRestaurantId(), user.getId());
+        // Load user role to get role name
+        UserRole userRole = userRoleRepository.findById(user.getUserRoleId())
+            .orElseThrow(() -> new BusinessException("ROLE_NOT_FOUND",
+                "User role not found",
+                HttpStatus.INTERNAL_SERVER_ERROR));
+
+        String accessToken = jwtService.generateToken(user.getUserName(), userRole.getName(), user.getRestaurantId(), user.getId());
+        String refreshToken = jwtService.generateRefreshToken(user.getUserName(), userRole.getName(), user.getRestaurantId(), user.getId());
 
         return new LoginResponse(user.getId(), user.getUserName(), accessToken, refreshToken);
     }
@@ -92,13 +72,13 @@ public class AuthService {
     public RefreshTokenResponse getRefreshToken (String refreshToken) {
 
         String username;
-        Role role;
+        String roleName;
         Long restaurantId;
         Long userId;
         try {
             Claims claims = jwtService.extractClaims(refreshToken);
             username = claims.getSubject();
-            role = Role.valueOf((String) claims.get("role"));
+            roleName = (String) claims.get("role");
             restaurantId = claims.get("restaurantId", Long.class);
             userId = claims.get("userId", Long.class);
         } catch (io.jsonwebtoken.security.SignatureException e) {
@@ -109,8 +89,8 @@ public class AuthService {
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token is invalid", HttpStatus.UNAUTHORIZED);
         }
 
-        String newAccessToken = jwtService.generateToken(username, role, restaurantId, userId);
-        String newRefreshToken = jwtService.generateRefreshToken(username, role, restaurantId, userId);
+        String newAccessToken = jwtService.generateToken(username, roleName, restaurantId, userId);
+        String newRefreshToken = jwtService.generateRefreshToken(username, roleName, restaurantId, userId);
 
         return new RefreshTokenResponse(newAccessToken, newRefreshToken);
     }

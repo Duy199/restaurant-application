@@ -2,8 +2,6 @@ package com.example.RestaurantApplication.module.user.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,7 +16,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import com.example.RestaurantApplication.module.restaurant.model.Restaurant;
-import com.example.RestaurantApplication.module.user.model.enums.Role;
+import com.example.RestaurantApplication.module.role.model.UserRole;
 import java.time.LocalDateTime;
 
 
@@ -57,9 +55,11 @@ public class User {
     @Column(name = "restaurant_id")
     private Long restaurantId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_role")
-    private Role role; 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_role_id", insertable = false, updatable = false)
+    private UserRole userRoleEntity;
+    @Column(name = "user_role_id")
+    private Long userRoleId; 
 
     // Getters and Setters
     public Long getId() {
@@ -126,11 +126,27 @@ public class User {
         this.restaurantId = restaurantId;
     }
 
-    public Role getRole() {
-        return role;
+    public Long getUserRoleId() {
+        return userRoleId;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
+    public void setUserRoleId(Long userRoleId) {
+        this.userRoleId = userRoleId;
+    }
+
+    public UserRole getUserRoleEntity() {
+        return userRoleEntity;
+    }
+
+    public void setUserRoleEntity(UserRole userRoleEntity) {
+        this.userRoleEntity = userRoleEntity;
+    }
+
+    /**
+     * Helper method to get role name from UserRole entity
+     * @return Role name (e.g., "ROLE_ADMIN") or null if not loaded
+     */
+    public String getRoleName() {
+        return userRoleEntity != null ? userRoleEntity.getName() : null;
     }
 }

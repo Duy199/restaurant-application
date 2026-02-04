@@ -6,8 +6,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.example.RestaurantApplication.module.user.model.enums.Role;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -24,10 +22,10 @@ public class JwtService {
     }
     
 
-    public String generateToken(String username, Role role, Long restaurantId, Long userId) {
+    public String generateToken(String username, String roleName, Long restaurantId, Long userId) {
         return Jwts.builder()
             .setSubject(username)
-            .claim("role", role.name())
+            .claim("role", roleName)
             .claim("restaurantId", restaurantId)
             .claim("userId", userId)
             .setId(UUID.randomUUID().toString())
@@ -38,10 +36,10 @@ public class JwtService {
     }
 
 
-    public String generateRefreshToken(String username, Role role, Long restaurantId, Long userId) {
+    public String generateRefreshToken(String username, String roleName, Long restaurantId, Long userId) {
         return Jwts.builder()
             .setSubject(username)
-            .claim("role", role.name())
+            .claim("role", roleName)
             .claim("restaurantId", restaurantId)
             .claim("userId", userId)
             .setId(UUID.randomUUID().toString())
@@ -55,9 +53,8 @@ public class JwtService {
         return props.getRefreshTokenExp();
     }
 
-    public Role extractUserRole(String token) {
-        String role = (String) extractClaims(token).get("role");
-        return Role.valueOf(role);
+    public String extractUserRole(String token) {
+        return (String) extractClaims(token).get("role");
     }
 
     public String extractUsername(String token) {

@@ -3,7 +3,6 @@ package com.example.RestaurantApplication.module.user.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.RestaurantApplication.module.user.dto.User.CreateUserRequest;
 import com.example.RestaurantApplication.module.user.dto.User.PatchUserRequest;
 import com.example.RestaurantApplication.module.user.dto.User.UpdateUserRequest;
 import com.example.RestaurantApplication.module.user.dto.User.UserDetail;
