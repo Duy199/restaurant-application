@@ -2,6 +2,7 @@ package com.example.RestaurantApplication.module.admin.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.module.permission.dto.PermissionApiDetail;
 import com.example.RestaurantApplication.module.permission.model.Permission;
 import com.example.RestaurantApplication.module.permission.model.PermissionHasPermissionApi;
 import com.example.RestaurantApplication.module.permission.repository.PermissionApiRepository;
@@ -58,6 +60,17 @@ public class AdminPermissionService {
         return permissionRepository.findByIdWithApis(id)
             .orElseThrow(() -> new BusinessException("PERMISSION_NOT_FOUND",
                 "Permission not found with id " + id, HttpStatus.NOT_FOUND));
+    }
+
+    public List<PermissionApiDetail> getPermissionApis(Long permissionId) {
+        Permission permission = permissionRepository.findByIdWithApis(permissionId)
+            .orElseThrow(() -> new BusinessException("PERMISSION_NOT_FOUND",
+                "Permission not found with id " + permissionId, HttpStatus.NOT_FOUND));
+
+        return permission.getPermissionApis().stream()
+            .map(api -> new PermissionApiDetail(api.getId(), api.getCode(), api.getName(),
+                api.getEndpoint(), api.getMethod()))
+            .collect(Collectors.toList());
     }
 
     public Permission createPermission(String code, String name) {

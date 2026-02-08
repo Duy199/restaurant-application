@@ -93,11 +93,7 @@ public class AdminPermissionController {
 
     @GetMapping("/{permissionId}/apis")
     public ApiResponse<List<PermissionApiDetail>> getPermissionApis(@PathVariable Long permissionId) {
-        Permission permission = adminPermissionService.getPermissionWithApis(permissionId);
-        List<PermissionApiDetail> apis = permission.getPermissionApis().stream()
-            .map(api -> new PermissionApiDetail(api.getId(), api.getCode(), api.getName(),
-                api.getEndpoint(), api.getMethod()))
-            .collect(Collectors.toList());
+        List<PermissionApiDetail> apis = adminPermissionService.getPermissionApis(permissionId);
         return ApiResponse.success("Permission APIs fetched successfully", "PERMISSION_APIS_FETCHED", apis);
     }
 
