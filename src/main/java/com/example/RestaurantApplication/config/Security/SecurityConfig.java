@@ -12,6 +12,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.example.RestaurantApplication.config.jwt.JwtAccessDeniedHandler;
 import com.example.RestaurantApplication.config.jwt.JwtAuthenticationEntryPoint;
 import com.example.RestaurantApplication.config.jwt.JwtAuthenticationFilter;
+import com.example.RestaurantApplication.config.tracing.RequestTracingFilter;
+import com.example.RestaurantApplication.config.tracing.RequestLoggingFilter;
 
 
 @Configuration
@@ -21,10 +23,14 @@ public class SecurityConfig {
 
     private final DynamicAuthorizationFilter dynamicAuthorizationFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RequestLoggingFilter requestLoggingFilter;
+    private final RequestTracingFilter requestTracingFilter;
 
-    SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, DynamicAuthorizationFilter dynamicAuthorizationFilter) {
+    SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, DynamicAuthorizationFilter dynamicAuthorizationFilter, RequestLoggingFilter requestLoggingFilter, RequestTracingFilter requestTracingFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.dynamicAuthorizationFilter = dynamicAuthorizationFilter;
+        this.requestLoggingFilter = requestLoggingFilter;
+        this.requestTracingFilter = requestTracingFilter;
     }
 
   @Bean
@@ -67,8 +73,10 @@ public class SecurityConfig {
               // All other endpoints - authenticated users with dynamic permission checking
               .anyRequest().authenticated()
           )
-          .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-          .addFilterAfter(dynamicAuthFilter, JwtAuthenticationFilter.class)
+          .addFilterBefore(requestTracingFilter, UsernamePasswordAuthenticationFilter.class)
+          .addFilterAfter(jwtFilter, RequestTracingFilter.class)
+          .addFilterAfter(requestLoggingFilter, JwtAuthenticationFilter.class)
+          .addFilterAfter(dynamicAuthFilter, RequestLoggingFilter.class)
           .addFilterAfter(tenantFilter, DynamicAuthorizationFilter.class)
           .build();
   }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- JSON output with nested structure -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <jsonGeneratorDecorator class="net.logstash.logback.decorate.PrettyPrintingJsonGeneratorDecorator"/>
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <message/>
+                <!-- Custom nested MDC provider (http, client, user) -->
+                <provider class="com.example.RestaurantApplication.config.tracing.NestedMdcJsonProvider"/>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- App modules: DEBUG level to see all tracing -->
+    <logger name="com.example.RestaurantApplication" level="DEBUG" />
+
+    <!-- Suppress noisy Spring/Hibernate logs -->
+    <logger name="org.springframework" level="WARN" />
+    <logger name="org.hibernate" level="WARN" />
+
+    <!-- Hibernate SQL queries (JSON format with MDC context) -->
+    <logger name="org.hibernate.SQL" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="JSON_CONSOLE" />
+    </root>
+
+</configuration>

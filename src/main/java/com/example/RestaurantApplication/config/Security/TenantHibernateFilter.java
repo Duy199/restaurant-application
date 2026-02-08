@@ -40,7 +40,7 @@ public class TenantHibernateFilter extends OncePerRequestFilter {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // chưa login thì khỏi enable filter
+        // If not login then skip this filter
         if (auth == null || !auth.isAuthenticated()) {
             chain.doFilter(request, response);
             return;
@@ -53,19 +53,16 @@ public class TenantHibernateFilter extends OncePerRequestFilter {
         if (!isAdmin) {
             Long rid = null;
 
-            // Nếu fen đã nhét rid vào auth.setDetails(Map.of(...)) thì lấy ở đây
             if (auth.getDetails() instanceof Map<?, ?> d) {
                 Object v = d.get("restaurant_id");
                 System.out.println(">>> TenantFilter - restaurant_id value: " + v + ", type: " + (v != null ? v.getClass() : "null"));
                 if (v instanceof Long) rid = (Long) v;
-                // nếu v là Integer/String thì tuỳ mình parse thêm
                 if (v instanceof Integer) rid = ((Integer) v).longValue();
                 if (v instanceof String s) rid = Long.valueOf(s);
                 System.out.println(">>> TenantFilter - Final rid: " + rid);
             }
 
             if (rid != null) {
-                // Lấy EntityManager từ transaction context (được bind bởi OpenEntityManagerInView)
                 EntityManagerHolder emHolder = (EntityManagerHolder) TransactionSynchronizationManager.getResource(entityManagerFactory);
 
                 if (emHolder != null) {
