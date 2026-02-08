@@ -29,7 +29,7 @@ public class TenantHibernateFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return path.startsWith("/api/v1/auth/");
+        return path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/admin/");
     }
 
     @Override
@@ -45,6 +45,7 @@ public class TenantHibernateFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
             return;
         }
+        
 
         boolean isAdmin = auth.getAuthorities().stream()
             .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));

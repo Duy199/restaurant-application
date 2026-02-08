@@ -19,6 +19,14 @@ import com.example.RestaurantApplication.config.jwt.JwtAuthenticationFilter;
 // @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final DynamicAuthorizationFilter dynamicAuthorizationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, DynamicAuthorizationFilter dynamicAuthorizationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.dynamicAuthorizationFilter = dynamicAuthorizationFilter;
+    }
+
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
@@ -60,8 +68,8 @@ public class SecurityConfig {
               .anyRequest().authenticated()
           )
           .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-          .addFilterAfter(tenantFilter, JwtAuthenticationFilter.class)
-          .addFilterAfter(dynamicAuthFilter, TenantHibernateFilter.class)
+          .addFilterAfter(dynamicAuthFilter, JwtAuthenticationFilter.class)
+          .addFilterAfter(tenantFilter, DynamicAuthorizationFilter.class)
           .build();
   }
 
