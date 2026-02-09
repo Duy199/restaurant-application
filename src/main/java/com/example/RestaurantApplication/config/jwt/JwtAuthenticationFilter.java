@@ -103,6 +103,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Long userId = userIdInt != null ? userIdInt.longValue() : null;
         String jti = claims.getId();
         long tokenIssuedAt = claims.getIssuedAt() != null ? claims.getIssuedAt().getTime() : 0;
+        
 
         // Check if the access token is not blacklisted (JTI check)
         if (tokenBlacklistService.isTokenBlacklisted(jti)) {
@@ -119,18 +120,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // Check if token was issued before user revocation (timestamp check)
-        Long revokedAt = tokenBlacklistService.getUserRevokedTimestamp(userId);
-        if (revokedAt != null && tokenIssuedAt < revokedAt) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("""
-            {
-            "success": false,
-            "code": "USER_TOKENS_REVOKED",
-            "message": "All tokens for this user have been revoked. Please login again."
+        if (!roleName.equalsIgnoreCase("ROLE_ADMIN")) {
+            Long revokedAt = tokenBlacklistService.getUserRevokedTimestamp(userId);
+            if (revokedAt != null && tokenIssuedAt < revokedAt) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("""
+                {
+                "success": false,
+                "code": "USER_TOKENS_REVOKED",
+                "message": "All tokens for this user have been revoked. Please login again."
+                }
+                """);
+                return;
             }
-            """);
-            return;
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
