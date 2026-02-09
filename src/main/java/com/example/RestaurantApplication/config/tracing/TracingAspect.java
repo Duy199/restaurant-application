@@ -23,7 +23,15 @@ public class TracingAspect {
 
     @Around("moduleLayer() || jwtService() || redisService()")
     public Object traceMethod(ProceedingJoinPoint joinPoint) throws Throwable {
-        Logger log = LoggerFactory.getLogger(joinPoint.getTarget().getClass());
+        Class<?> targetClass = joinPoint.getTarget().getClass();
+        // JPA proxy → lấy interface gốc (VD: UserRoleRepository)
+        if (targetClass.getName().contains("$Proxy")) {
+            Class<?>[] interfaces = targetClass.getInterfaces();
+            if (interfaces.length > 0) {
+                targetClass = interfaces[0];
+            }
+        }
+        Logger log = LoggerFactory.getLogger(targetClass);
 
         String method = joinPoint.getSignature().toShortString();
         log.info(">> {}", method);

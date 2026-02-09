@@ -14,6 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,15 +64,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String username;
-        String roleName;
-        Long restaurantId;
-        Long userId;
+        // Parse JWT 1 lần duy nhất → lấy hết fields từ Claims
+        Claims claims;
         try {
-            username = jwtService.extractUsername(token);
-            roleName = jwtService.extractUserRole(token);
-            restaurantId = jwtService.extractRestaurantId(token);
-            userId = jwtService.extractUserId(token);
+            claims = jwtService.extractClaims(token);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
 
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -99,8 +95,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        String username = claims.getSubject();
+        String roleName = (String) claims.get("role");
+        Integer restaurantIdInt = (Integer) claims.get("restaurantId");
+        Long restaurantId = restaurantIdInt != null ? restaurantIdInt.longValue() : null;
+        Integer userIdInt = (Integer) claims.get("userId");
+        Long userId = userIdInt != null ? userIdInt.longValue() : null;
+        String jti = claims.getId();
+        long tokenIssuedAt = claims.getIssuedAt() != null ? claims.getIssuedAt().getTime() : 0;
+
         // Check if the access token is not blacklisted (JTI check)
-        String jti = jwtService.extractJtiString(token);
         if (tokenBlacklistService.isTokenBlacklisted(jti)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
@@ -116,45 +120,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Check if token was issued before user revocation (timestamp check)
         Long revokedAt = tokenBlacklistService.getUserRevokedTimestamp(userId);
-        if (revokedAt != null) {
-            long tokenIssuedAt = jwtService.extractIssuedAt(token);
-            if (tokenIssuedAt < revokedAt) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("""
-                {
-                "success": false,
-                "code": "USER_TOKENS_REVOKED",
-                "message": "All tokens for this user have been revoked. Please login again."
-                }
-                """);
-                return;
+        if (revokedAt != null && tokenIssuedAt < revokedAt) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("""
+            {
+            "success": false,
+            "code": "USER_TOKENS_REVOKED",
+            "message": "All tokens for this user have been revoked. Please login again."
             }
+            """);
+            return;
         }
 
-
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            var authorities = List.of(new SimpleGrantedAuthority(roleName));
+            UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(
+                    username,
+                    null,
+                    authorities
+                );
 
-            if (jwtService.isTokenValid(token, username)) {
-                var authorities = List.of(new SimpleGrantedAuthority(roleName));
-                UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(
-                        username,
-                        null,
-                        authorities
-                    );
+            Map<String, Object> details = new HashMap<>();
+            details.put("userName", username);
+            details.put("role", roleName);
+            details.put("restaurant_id", restaurantId);
+            details.put("user_id", userId);
+            details.put("web_details", new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // Dùng HashMap thay vì Map.of() để support null values (cho ADMIN users)
-                Map<String, Object> details = new HashMap<>();
-                details.put("userName", username);
-                details.put("role", roleName);
-                details.put("restaurant_id", restaurantId);  // Có thể null cho ADMIN
-                details.put("user_id", userId);
-                details.put("web_details", new WebAuthenticationDetailsSource().buildDetails(request));
-
-                auth.setDetails(details);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
+            auth.setDetails(details);
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
         filterChain.doFilter(request, response);
