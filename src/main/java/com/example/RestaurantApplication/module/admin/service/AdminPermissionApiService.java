@@ -5,12 +5,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 import com.example.RestaurantApplication.module.permission.model.PermissionApi;
 import com.example.RestaurantApplication.module.permission.model.PermissionHasPermissionApi;
 import com.example.RestaurantApplication.module.permission.repository.PermissionApiRepository;
@@ -23,6 +26,8 @@ import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
 @Service
 public class AdminPermissionApiService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminPermissionApiService.class);
 
     @Autowired
     private PermissionApiRepository permissionApiRepository;
@@ -54,6 +59,7 @@ public class AdminPermissionApiService {
 
     public PermissionApi createPermissionApi(String code, String name, String endpoint, String method) {
         if (permissionApiRepository.existsByCode(code)) {
+            log.warn("[{}] PERMISSION_API_EXISTS: code={}", LogHelper.loc(), code);
             throw new BusinessException("PERMISSION_API_EXISTS",
                 "Permission API already exists with code: " + code, HttpStatus.CONFLICT);
         }
@@ -63,7 +69,9 @@ public class AdminPermissionApiService {
         permissionApi.setName(name);
         permissionApi.setEndpoint(endpoint);
         permissionApi.setMethod(method.toUpperCase());
-        return permissionApiRepository.save(permissionApi);
+        PermissionApi saved = permissionApiRepository.save(permissionApi);
+        log.info("[{}] PermissionApi created: code={}", LogHelper.loc(), code);
+        return saved;
     }
 
     @Transactional
@@ -73,6 +81,7 @@ public class AdminPermissionApiService {
                 "Permission API not found with id " + id, HttpStatus.NOT_FOUND));
 
         if (!permissionApi.getCode().equals(code) && permissionApiRepository.existsByCode(code)) {
+            log.warn("[{}] PERMISSION_API_EXISTS: code={}", LogHelper.loc(), code);
             throw new BusinessException("PERMISSION_API_EXISTS",
                 "Permission API already exists with code: " + code, HttpStatus.CONFLICT);
         }
@@ -85,6 +94,7 @@ public class AdminPermissionApiService {
 
         // Check if this API is assigned to any permissions, then revoke
         revokeTokensIfPermissionApiIsAssigned(id);
+        log.info("[{}] PermissionApi updated: id={}", LogHelper.loc(), id);
 
         return savedApi;
     }
@@ -97,6 +107,7 @@ public class AdminPermissionApiService {
 
         if (code != null && !code.isBlank()) {
             if (!permissionApi.getCode().equals(code) && permissionApiRepository.existsByCode(code)) {
+                log.warn("[{}] PERMISSION_API_EXISTS: code={}", LogHelper.loc(), code);
                 throw new BusinessException("PERMISSION_API_EXISTS",
                     "Permission API already exists with code: " + code, HttpStatus.CONFLICT);
             }
@@ -134,6 +145,7 @@ public class AdminPermissionApiService {
 
         permissionApi.setDeletedAt(LocalDateTime.now());
         permissionApiRepository.save(permissionApi);
+        log.info("[{}] PermissionApi deleted: id={}", LogHelper.loc(), id);
     }
 
     /**
@@ -174,5 +186,6 @@ public class AdminPermissionApiService {
         for (Long userId : affectedUserIds) {
             tokenBlacklistService.revokeAllUserTokens(userId, TOKEN_REVOCATION_TTL);
         }
+        log.info("[{}] Tokens revoked for API change: apiId={}, affectedUsers={}", LogHelper.loc(), permissionApiId, affectedUserIds.size());
     }
 }

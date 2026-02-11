@@ -2,6 +2,8 @@ package com.example.RestaurantApplication.module.user.service;
 
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.RestaurantApplication.config.jwt.JwtService;
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 import com.example.RestaurantApplication.module.role.model.UserRole;
 import com.example.RestaurantApplication.module.role.repository.UserRoleRepository;
 import com.example.RestaurantApplication.module.user.dto.Login.LoginResponse;
@@ -22,6 +25,8 @@ import io.jsonwebtoken.Claims;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -48,9 +53,13 @@ public class AuthService {
     public LoginResponse authenticateUser(String userName, String password) {
         // Authentication logic here
         User user = userRepository.findByUserName(userName)
-                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("[{}] USER_NOT_FOUND: {}", LogHelper.loc(), userName);
+                    return new BusinessException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND);
+                });
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
+            log.warn("[{}] INVALID_CREDENTIALS: {}", LogHelper.loc(), userName);
             throw new BusinessException("INVALID_CREDENTIALS", "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
@@ -59,13 +68,17 @@ public class AuthService {
 
         // Load user role to get role name
         UserRole userRole = userRoleRepository.findById(user.getUserRoleId())
-            .orElseThrow(() -> new BusinessException("ROLE_NOT_FOUND",
-                "User role not found",
-                HttpStatus.INTERNAL_SERVER_ERROR));
+            .orElseThrow(() -> {
+                log.warn("[{}] ROLE_NOT_FOUND: userRoleId={}", LogHelper.loc(), user.getUserRoleId());
+                return new BusinessException("ROLE_NOT_FOUND",
+                    "User role not found",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+            });
 
         String accessToken = jwtService.generateToken(user.getUserName(), userRole.getName(), user.getRestaurantId(), user.getId());
         String refreshToken = jwtService.generateRefreshToken(user.getUserName(), userRole.getName(), user.getRestaurantId(), user.getId());
 
+        log.info("[{}] Login success: userId={}", LogHelper.loc(), user.getId());
         return new LoginResponse(user.getId(), user.getUserName(), accessToken, refreshToken);
     }
 
@@ -82,16 +95,20 @@ public class AuthService {
             restaurantId = claims.get("restaurantId", Long.class);
             userId = claims.get("userId", Long.class);
         } catch (io.jsonwebtoken.security.SignatureException e) {
+            log.warn("[{}] REFRESH_TOKEN_INVALID: {}", LogHelper.loc(), e.getMessage());
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token signature is invalid", HttpStatus.UNAUTHORIZED);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.warn("[{}] REFRESH_TOKEN_EXPIRED: {}", LogHelper.loc(), e.getMessage());
             throw new BusinessException("REFRESH_TOKEN_EXPIRED", "Refresh token has expired", HttpStatus.UNAUTHORIZED);
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            log.warn("[{}] REFRESH_TOKEN_INVALID: {}", LogHelper.loc(), e.getMessage());
             throw new BusinessException("REFRESH_TOKEN_INVALID", "Refresh token is invalid", HttpStatus.UNAUTHORIZED);
         }
 
         String newAccessToken = jwtService.generateToken(username, roleName, restaurantId, userId);
         String newRefreshToken = jwtService.generateRefreshToken(username, roleName, restaurantId, userId);
 
+        log.info("[{}] Token refreshed: user={}", LogHelper.loc(), username);
         return new RefreshTokenResponse(newAccessToken, newRefreshToken);
     }
 
@@ -104,6 +121,7 @@ public class AuthService {
             // Add the token's JTI to the blacklist
             tokenBlacklistService.addToBlacklist(jti, expirationTime, tokenType);
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            log.warn("[{}] TOKEN_INVALID: {} - {}", LogHelper.loc(), tokenType, e.getMessage());
             throw new BusinessException("TOKEN_INVALID", tokenType + " token is invalid", HttpStatus.UNAUTHORIZED);
         }
     }
@@ -113,6 +131,7 @@ public class AuthService {
         String jti = claims.getId();
 
         if (tokenBlacklistService.isTokenBlacklisted(jti)) {
+            log.warn("[{}] REFRESH_TOKEN_REVOKED: jti={}", LogHelper.loc(), jti);
             throw new BusinessException("REFRESH_TOKEN_REVOKED", "Refresh token has been revoked", HttpStatus.UNAUTHORIZED);
         }
     }
@@ -126,6 +145,7 @@ public class AuthService {
     public void revokeAllUserTokens(Long userId) {
         // TTL = refresh token expiration time (7 days)
         long ttl = jwtService.getRefreshTokenExpiration();
+        log.info("[{}] All tokens revoked: userId={}", LogHelper.loc(), userId);
         tokenBlacklistService.revokeAllUserTokens(userId, ttl);
     }
 }

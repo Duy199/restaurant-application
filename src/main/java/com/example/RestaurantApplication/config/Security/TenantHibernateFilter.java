@@ -3,12 +3,16 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.hibernate.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.orm.jpa.EntityManagerHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -20,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class TenantHibernateFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(TenantHibernateFilter.class);
     private final EntityManagerFactory entityManagerFactory;
 
     public TenantHibernateFilter(EntityManagerFactory entityManagerFactory) {
@@ -55,11 +60,9 @@ public class TenantHibernateFilter extends OncePerRequestFilter {
 
             if (auth.getDetails() instanceof Map<?, ?> d) {
                 Object v = d.get("restaurant_id");
-                System.out.println(">>> TenantFilter - restaurant_id value: " + v + ", type: " + (v != null ? v.getClass() : "null"));
                 if (v instanceof Long) rid = (Long) v;
                 if (v instanceof Integer) rid = ((Integer) v).longValue();
                 if (v instanceof String s) rid = Long.valueOf(s);
-                System.out.println(">>> TenantFilter - Final rid: " + rid);
             }
 
             if (rid != null) {
@@ -69,13 +72,14 @@ public class TenantHibernateFilter extends OncePerRequestFilter {
                     EntityManager em = emHolder.getEntityManager();
                     Session session = em.unwrap(Session.class);
                     session.enableFilter("tenantFilter").setParameter("rid", rid);
-                    System.out.println(">>> TenantFilter ENABLED (from holder) with rid: " + rid);
+                    log.info("[{}] Tenant filter enabled: rid={}", LogHelper.loc(), rid);
                 } else {
-                    System.out.println(">>> TenantFilter WARNING: No EntityManager bound to thread, storing rid in thread-local");
+                    log.warn("[{}] No EntityManager bound, storing rid in request attribute: rid={}", LogHelper.loc(), rid);
                     // Fallback: Store rid in request attribute để Service layer có thể enable filter
                     request.setAttribute("TENANT_RESTAURANT_ID", rid);
                 }
             } else {
+                log.warn("[{}] MISSING_RESTAURANT_SCOPE: no restaurant_id for user", LogHelper.loc());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType("application/json");
                 response.getWriter().write("""

@@ -20,8 +20,14 @@ import com.example.RestaurantApplication.module.user.model.User;
 import com.example.RestaurantApplication.module.user.repository.UserRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
+
 @Service
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -36,7 +42,10 @@ public class UserService {
 
     public User loadUserByUsername(String username) {
         return userRepository.findByUserName(username)
-            .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found with username " + username, HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] USER_NOT_FOUND: username={}", LogHelper.loc(), username);
+                return new BusinessException("USER_NOT_FOUND", "User not found with username " + username, HttpStatus.NOT_FOUND);
+            });
     }
 
     public List<User> loadAllUsers() {
@@ -46,7 +55,10 @@ public class UserService {
     public User loadUserById(Long id) {
         // Dùng findByIdFiltered() thay vì findById() để trigger Hibernate filter
         return userRepository.findByIdFiltered(id)
-            .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found with id " + id, HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] USER_NOT_FOUND: id={}", LogHelper.loc(), id);
+                return new BusinessException("USER_NOT_FOUND", "User not found with id " + id, HttpStatus.NOT_FOUND);
+            });
     }
 
     public void addNewUser (String userName, String email, String password, String role) {
@@ -55,22 +67,28 @@ public class UserService {
 
         // Validate username và email uniqueness
         if(userRepository.existsByUserName(userName)) {
+            log.warn("[{}] USERNAME_EXISTS: {}", LogHelper.loc(), userName);
             throw new BusinessException("USERNAME_EXISTS", "Username already exists: " + userName, HttpStatus.CONFLICT);
         }
         if(userRepository.existsByEmail(email)) {
+            log.warn("[{}] EMAIL_EXISTS: {}", LogHelper.loc(), email);
             throw new BusinessException("EMAIL_EXISTS", "Email already exists: " + email, HttpStatus.CONFLICT);
         }
 
         // Validate restaurant exists
         if (restaurantRepository.findById(restaurantId).isEmpty()) {
+            log.warn("[{}] RESTAURANT_NOT_FOUND: id={}", LogHelper.loc(), restaurantId);
             throw new BusinessException("RESTAURANT_NOT_FOUND", "Restaurant not found with id " + restaurantId, HttpStatus.NOT_FOUND);
         }
 
         // Find role by name
         UserRole userRole = userRoleRepository.findByNameActive(role)
-            .orElseThrow(() -> new BusinessException("ROLE_NOT_FOUND",
-                "Role not found: " + role,
-                HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] ROLE_NOT_FOUND: {}", LogHelper.loc(), role);
+                return new BusinessException("ROLE_NOT_FOUND",
+                    "Role not found: " + role,
+                    HttpStatus.NOT_FOUND);
+            });
 
         // Create and save user
         User user = new User();
@@ -80,6 +98,7 @@ public class UserService {
         user.setUserRoleId(userRole.getId());
         user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
+        log.info("[{}] User created: username={}", LogHelper.loc(), userName);
     }
 
     private Long getAuthenticatedRestaurantId() {
@@ -99,6 +118,7 @@ public class UserService {
 
         // Staff/Manager can only update themselves
         if (!currentUserId.equals(targetUserId)) {
+            log.warn("[{}] ACCESS_DENIED: userId={} tried to update userId={}", LogHelper.loc(), currentUserId, targetUserId);
             throw new BusinessException("ACCESS_DENIED",
                 "You can only update your own profile",
                 HttpStatus.FORBIDDEN);
@@ -112,6 +132,7 @@ public class UserService {
 
         // Check username uniqueness if changed
         if (!user.getUserName().equals(username) && userRepository.existsByUserName(username)) {
+            log.warn("[{}] USERNAME_EXISTS: {}", LogHelper.loc(), username);
             throw new BusinessException("USERNAME_EXISTS",
                 "Username already exists: " + username,
                 HttpStatus.CONFLICT);
@@ -119,6 +140,7 @@ public class UserService {
 
         // Check email uniqueness if changed
         if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+            log.warn("[{}] EMAIL_EXISTS: {}", LogHelper.loc(), email);
             throw new BusinessException("EMAIL_EXISTS",
                 "Email already exists: " + email,
                 HttpStatus.CONFLICT);
@@ -136,10 +158,12 @@ public class UserService {
         }
 
         userRepository.save(user);
+        log.info("[{}] User updated: userId={}", LogHelper.loc(), targetUserId);
 
         // Revoke all tokens if password changed (force re-login from all devices)
         if (passwordChanged) {
             authService.revokeAllUserTokens(targetUserId);
+            log.info("[{}] Password changed, tokens revoked: userId={}", LogHelper.loc(), targetUserId);
         }
     }
 
@@ -148,6 +172,7 @@ public class UserService {
 
         // Staff/Manager can only update themselves
         if (!currentUserId.equals(targetUserId)) {
+            log.warn("[{}] ACCESS_DENIED: userId={} tried to patch userId={}", LogHelper.loc(), currentUserId, targetUserId);
             throw new BusinessException("ACCESS_DENIED",
                 "You can only update your own profile",
                 HttpStatus.FORBIDDEN);
@@ -162,6 +187,7 @@ public class UserService {
         // Partial update - only update provided fields
         if (username != null && !username.isBlank()) {
             if (!user.getUserName().equals(username) && userRepository.existsByUserName(username)) {
+                log.warn("[{}] USERNAME_EXISTS: {}", LogHelper.loc(), username);
                 throw new BusinessException("USERNAME_EXISTS",
                     "Username already exists: " + username,
                     HttpStatus.CONFLICT);
@@ -171,6 +197,7 @@ public class UserService {
 
         if (email != null && !email.isBlank()) {
             if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+                log.warn("[{}] EMAIL_EXISTS: {}", LogHelper.loc(), email);
                 throw new BusinessException("EMAIL_EXISTS",
                     "Email already exists: " + email,
                     HttpStatus.CONFLICT);
@@ -185,10 +212,12 @@ public class UserService {
         }
 
         userRepository.save(user);
+        log.info("[{}] User patched: userId={}", LogHelper.loc(), targetUserId);
 
         // Revoke all tokens if password changed (force re-login from all devices)
         if (passwordChanged) {
             authService.revokeAllUserTokens(targetUserId);
+            log.info("[{}] Password changed, tokens revoked: userId={}", LogHelper.loc(), targetUserId);
         }
     }
 
@@ -196,11 +225,15 @@ public class UserService {
 
         // Load user with filter applied (admin can access all restaurants)
         User user = userRepository.findByIdFiltered(targetUserId)
-            .orElseThrow(() -> new BusinessException("USER_NOT_FOUND",
-                "User not found with id " + targetUserId,
-                HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] USER_NOT_FOUND: id={}", LogHelper.loc(), targetUserId);
+                return new BusinessException("USER_NOT_FOUND",
+                    "User not found with id " + targetUserId,
+                    HttpStatus.NOT_FOUND);
+            });
 
         userRepository.delete(user);
+        log.info("[{}] User deleted: userId={}", LogHelper.loc(), targetUserId);
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {

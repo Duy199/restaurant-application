@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import net.logstash.logback.marker.Markers;
+
 @Aspect
 @Component
 public class TracingAspect {
@@ -40,11 +42,11 @@ public class TracingAspect {
         try {
             Object result = joinPoint.proceed();
             long duration = System.currentTimeMillis() - start;
-            log.info("<< {} ({}ms)", method, duration);
+            log.info(Markers.append("duration_ms", duration), "<< {}", method);
             return result;
         } catch (Throwable e) {
             long duration = System.currentTimeMillis() - start;
-            log.error("<< {} FAILED ({}ms) - {}", method, duration, e.getMessage());
+            log.error(Markers.append("duration_ms", duration), "<< {} FAILED - {}", method, e.getMessage());
             throw e;
         }
     }

@@ -24,23 +24,17 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException, IOException {
 
-        try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.isAuthenticated() && auth.getDetails() instanceof Map<?, ?> details) {
-                Object userId = details.get("user_id");
-                Object userName = details.get("userName");
-                Object role = details.get("role");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getDetails() instanceof Map<?, ?> details) {
+            Object userId = details.get("user_id");
+            Object userName = details.get("userName");
+            Object role = details.get("role");
 
-                if (userId != null) MDC.put("userId", userId.toString());
-                if (userName != null) MDC.put("userName", userName.toString());
-                if (role != null) MDC.put("role", role.toString());
-            }
-
-            filterChain.doFilter(request, response);
-        } finally {
-            MDC.remove("userId");
-            MDC.remove("userName");
-            MDC.remove("role");
+            if (userId != null) MDC.put("userId", userId.toString());
+            if (userName != null) MDC.put("userName", userName.toString());
+            if (role != null) MDC.put("role", role.toString());
         }
+
+        filterChain.doFilter(request, response);
     }
 }

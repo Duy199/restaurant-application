@@ -6,11 +6,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 
 import com.example.RestaurantApplication.module.permission.model.PermissionApi;
 import com.example.RestaurantApplication.module.permission.repository.PermissionApiRepository;
@@ -26,6 +30,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class DynamicAuthorizationFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(DynamicAuthorizationFilter.class);
     private final UserRoleRepository userRoleRepository;
     private final RoleHasPermissionRepository roleHasPermissionRepository;
     private final PermissionApiRepository permissionApiRepository;
@@ -154,6 +159,7 @@ public class DynamicAuthorizationFilter extends OncePerRequestFilter {
      * Send 403 Forbidden response with JSON error message
      */
     private void sendForbiddenResponse(HttpServletResponse response, String message) throws IOException {
+        log.warn("[{}] RBAC_DENIED: {}", LogHelper.loc(), message);
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
         response.getWriter().write(String.format("""

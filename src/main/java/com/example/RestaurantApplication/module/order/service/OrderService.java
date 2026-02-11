@@ -27,8 +27,14 @@ import com.example.RestaurantApplication.module.order.repository.OrderDetailRepo
 import com.example.RestaurantApplication.module.order.repository.OrderRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
+
 @Service
 public class OrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
     @Autowired
     private OrderRepository orderRepository;
@@ -51,9 +57,12 @@ public class OrderService {
      */
     public Order getOrderById(Long id) {
         return orderRepository.findByIdActive(id)
-            .orElseThrow(() -> new BusinessException("ORDER_NOT_FOUND",
-                "Order not found with id " + id,
-                HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] ORDER_NOT_FOUND: id={}", LogHelper.loc(), id);
+                return new BusinessException("ORDER_NOT_FOUND",
+                    "Order not found with id " + id,
+                    HttpStatus.NOT_FOUND);
+            });
     }
 
     /**
@@ -102,6 +111,7 @@ public class OrderService {
         List<Ingredient> ingredients = ingredientRepository.findAllById(ingredientIds);
 
         if (ingredients.size() != ingredientIds.size()) {
+            log.warn("[{}] INGREDIENT_NOT_FOUND: some ingredients missing", LogHelper.loc());
             throw new BusinessException("INGREDIENT_NOT_FOUND",
                 "One or more ingredients not found",
                 HttpStatus.BAD_REQUEST);
@@ -128,6 +138,7 @@ public class OrderService {
         order.setRestaurantId(restaurantId);
 
         order = orderRepository.save(order);
+        log.info("[{}] Order created: code={}, total={}", LogHelper.loc(), order.getCode(), totalAmount);
 
         // Create order details
         for (OrderItemRequest item : request.getItems()) {
@@ -149,9 +160,12 @@ public class OrderService {
     @Transactional
     public void deleteOrder(Long id) {
         Order order = orderRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("ORDER_NOT_FOUND",
-                "Order not found with id " + id,
-                HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] ORDER_NOT_FOUND: id={}", LogHelper.loc(), id);
+                return new BusinessException("ORDER_NOT_FOUND",
+                    "Order not found with id " + id,
+                    HttpStatus.NOT_FOUND);
+            });
 
         order.setDeletedAt(LocalDateTime.now());
         orderRepository.save(order);
@@ -162,6 +176,7 @@ public class OrderService {
             detail.setDeletedAt(LocalDateTime.now());
             orderDetailRepository.save(detail);
         }
+        log.info("[{}] Order deleted: id={}", LogHelper.loc(), id);
     }
 
     /**
@@ -183,6 +198,7 @@ public class OrderService {
     private Long getAuthenticatedUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getDetails() instanceof Map)) {
+            log.warn("[{}] UNAUTHORIZED: user not authenticated", LogHelper.loc());
             throw new BusinessException("UNAUTHORIZED", "User not authenticated", HttpStatus.UNAUTHORIZED);
         }
         Map<String, Object> details = (Map<String, Object>) auth.getDetails();
@@ -193,6 +209,7 @@ public class OrderService {
     private Long getAuthenticatedRestaurantId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getDetails() instanceof Map)) {
+            log.warn("[{}] UNAUTHORIZED: user not authenticated", LogHelper.loc());
             throw new BusinessException("UNAUTHORIZED", "User not authenticated", HttpStatus.UNAUTHORIZED);
         }
         Map<String, Object> details = (Map<String, Object>) auth.getDetails();

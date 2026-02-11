@@ -2,11 +2,14 @@ package com.example.RestaurantApplication.module.admin.service;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 import com.example.RestaurantApplication.module.role.model.UserRole;
 import com.example.RestaurantApplication.module.role.repository.UserRoleRepository;
 import com.example.RestaurantApplication.module.user.model.User;
@@ -16,6 +19,8 @@ import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
 @Service
 public class AdminUserService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminUserService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -55,11 +60,13 @@ public class AdminUserService {
     public void createUser(String userName, String email, String password, String role, Long restaurantId) {
         // Validate username and email uniqueness
         if (userRepository.existsByUserName(userName)) {
+            log.warn("[{}] USERNAME_EXISTS: {}", LogHelper.loc(), userName);
             throw new BusinessException("USERNAME_EXISTS",
                 "Username already exists: " + userName,
                 HttpStatus.CONFLICT);
         }
         if (userRepository.existsByEmail(email)) {
+            log.warn("[{}] EMAIL_EXISTS: {}", LogHelper.loc(), email);
             throw new BusinessException("EMAIL_EXISTS",
                 "Email already exists: " + email,
                 HttpStatus.CONFLICT);
@@ -75,6 +82,7 @@ public class AdminUserService {
         if ("ROLE_ADMIN".equals(role)) {
             // ADMIN must NOT have restaurantId
             if (restaurantId != null) {
+                log.warn("[{}] INVALID_RESTAURANT_ID: ADMIN cannot have restaurantId", LogHelper.loc());
                 throw new BusinessException("INVALID_RESTAURANT_ID",
                     "ROLE_ADMIN users cannot be assigned to a restaurant",
                     HttpStatus.BAD_REQUEST);
@@ -82,6 +90,7 @@ public class AdminUserService {
         } else {
             // MANAGER/STAFF must have restaurantId
             if (restaurantId == null) {
+                log.warn("[{}] RESTAURANT_ID_REQUIRED: role={}", LogHelper.loc(), role);
                 throw new BusinessException("RESTAURANT_ID_REQUIRED",
                     "Restaurant ID is required for " + role + " users",
                     HttpStatus.BAD_REQUEST);
@@ -97,6 +106,7 @@ public class AdminUserService {
         user.setPassword(passwordEncoder.encode(password));
 
         userRepository.save(user);
+        log.info("[{}] Admin created user: username={}, role={}", LogHelper.loc(), userName, role);
     }
 
     /**
@@ -110,6 +120,7 @@ public class AdminUserService {
 
         // Check username uniqueness if changed
         if (!user.getUserName().equals(username) && userRepository.existsByUserName(username)) {
+            log.warn("[{}] USERNAME_EXISTS: {}", LogHelper.loc(), username);
             throw new BusinessException("USERNAME_EXISTS",
                 "Username already exists: " + username,
                 HttpStatus.CONFLICT);
@@ -117,6 +128,7 @@ public class AdminUserService {
 
         // Check email uniqueness if changed
         if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+            log.warn("[{}] EMAIL_EXISTS: {}", LogHelper.loc(), email);
             throw new BusinessException("EMAIL_EXISTS",
                 "Email already exists: " + email,
                 HttpStatus.CONFLICT);
@@ -147,10 +159,12 @@ public class AdminUserService {
         }
 
         userRepository.save(user);
+        log.info("[{}] Admin updated user: userId={}", LogHelper.loc(), userId);
 
         // Revoke all tokens if password changed (force re-login from all devices)
         if (passwordChanged || roleChanged) {
             authService.revokeAllUserTokens(userId);
+            log.info("[{}] Tokens revoked for user: userId={}", LogHelper.loc(), userId);
         }
     }
 
@@ -166,6 +180,7 @@ public class AdminUserService {
         // Partial update - only update provided fields
         if (username != null && !username.isBlank()) {
             if (!user.getUserName().equals(username) && userRepository.existsByUserName(username)) {
+                log.warn("[{}] USERNAME_EXISTS: {}", LogHelper.loc(), username);
                 throw new BusinessException("USERNAME_EXISTS",
                     "Username already exists: " + username,
                     HttpStatus.CONFLICT);
@@ -175,6 +190,7 @@ public class AdminUserService {
 
         if (email != null && !email.isBlank()) {
             if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+                log.warn("[{}] EMAIL_EXISTS: {}", LogHelper.loc(), email);
                 throw new BusinessException("EMAIL_EXISTS",
                     "Email already exists: " + email,
                     HttpStatus.CONFLICT);
@@ -202,10 +218,12 @@ public class AdminUserService {
         }
 
         userRepository.save(user);
+        log.info("[{}] Admin patched user: userId={}", LogHelper.loc(), userId);
 
         // Revoke all tokens if password changed (force re-login from all devices)
         if (passwordChanged || roleChanged) {
             authService.revokeAllUserTokens(userId);
+            log.info("[{}] Tokens revoked for user: userId={}", LogHelper.loc(), userId);
         }
     }
 
@@ -219,5 +237,6 @@ public class AdminUserService {
                 HttpStatus.NOT_FOUND));
 
         userRepository.delete(user);
+        log.info("[{}] Admin deleted user: userId={}", LogHelper.loc(), userId);
     }
 }

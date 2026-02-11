@@ -2,17 +2,22 @@ package com.example.RestaurantApplication.module.admin.service;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 import com.example.RestaurantApplication.module.restaurant.model.Restaurant;
 import com.example.RestaurantApplication.module.restaurant.repository.RestaurantRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
 @Service
 public class AdminRestaurantService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminRestaurantService.class);
 
     @Autowired
     private RestaurantRepository restaurantRepository;
@@ -42,6 +47,7 @@ public class AdminRestaurantService {
      */
     public void createRestaurant(String name, String address) {
         if (restaurantRepository.existsByName(name)) {
+            log.warn("[{}] RESTAURANT_NAME_ALREADY_EXISTS: name={}", LogHelper.loc(), name);
             throw new BusinessException("RESTAURANT_NAME_ALREADY_EXISTS",
                 "Restaurant name already exists: " + name,
                 HttpStatus.CONFLICT);
@@ -53,6 +59,7 @@ public class AdminRestaurantService {
         restaurant.setAddress(address);
         restaurant.setCode(code);
         restaurantRepository.save(restaurant);
+        log.info("[{}] Admin created restaurant: name={}", LogHelper.loc(), name);
     }
 
     /**
@@ -67,6 +74,7 @@ public class AdminRestaurantService {
 
         // Check name uniqueness if changed
         if (!restaurant.getName().equals(name) && restaurantRepository.existsByName(name)) {
+            log.warn("[{}] RESTAURANT_NAME_ALREADY_EXISTS: name={}", LogHelper.loc(), name);
             throw new BusinessException("RESTAURANT_NAME_ALREADY_EXISTS",
                 "Restaurant name already exists: " + name,
                 HttpStatus.CONFLICT);
@@ -75,6 +83,7 @@ public class AdminRestaurantService {
         restaurant.setName(name);
         restaurant.setAddress(address);
         restaurantRepository.save(restaurant);
+        log.info("[{}] Admin updated restaurant: id={}", LogHelper.loc(), id);
     }
 
     /**
@@ -90,6 +99,7 @@ public class AdminRestaurantService {
         // Partial update - only update provided fields
         if (name != null && !name.isBlank()) {
             if (!restaurant.getName().equals(name) && restaurantRepository.existsByName(name)) {
+                log.warn("[{}] RESTAURANT_NAME_ALREADY_EXISTS: name={}", LogHelper.loc(), name);
                 throw new BusinessException("RESTAURANT_NAME_ALREADY_EXISTS",
                     "Restaurant name already exists: " + name,
                     HttpStatus.CONFLICT);
@@ -115,5 +125,6 @@ public class AdminRestaurantService {
                 HttpStatus.NOT_FOUND));
 
         restaurantRepository.delete(restaurant);
+        log.info("[{}] Admin deleted restaurant: id={}", LogHelper.loc(), id);
     }
 }

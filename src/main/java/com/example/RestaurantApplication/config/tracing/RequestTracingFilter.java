@@ -8,6 +8,8 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import net.logstash.logback.marker.Markers;
+
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 
 import jakarta.servlet.FilterChain;
@@ -37,11 +39,9 @@ public class RequestTracingFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             long duration = System.currentTimeMillis() - start;
-            log.info("Request completed: {} {} ({}ms) - {}", request.getMethod(), request.getRequestURI(), duration, response.getStatus());
-            MDC.remove("correlation_id");
-            MDC.remove("method");
-            MDC.remove("uri");
-            MDC.remove("clientIp");
+            log.info(Markers.append("duration_ms", duration).and(Markers.append("status", response.getStatus())),
+                "Request completed: {} {}", request.getMethod(), request.getRequestURI());
+            MDC.clear();
         }
     }
 }

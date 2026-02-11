@@ -3,12 +3,15 @@ package com.example.RestaurantApplication.module.admin.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 import com.example.RestaurantApplication.module.permission.repository.PermissionRepository;
 import com.example.RestaurantApplication.module.role.model.RoleHasPermission;
 import com.example.RestaurantApplication.module.role.model.UserRole;
@@ -20,6 +23,8 @@ import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
 @Service
 public class AdminUserRoleService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminUserRoleService.class);
 
     @Autowired
     private UserRoleRepository userRoleRepository;
@@ -57,13 +62,16 @@ public class AdminUserRoleService {
 
     public UserRole createRole(String name) {
         if (userRoleRepository.existsByName(name)) {
+            log.warn("[{}] ROLE_EXISTS: name={}", LogHelper.loc(), name);
             throw new BusinessException("ROLE_EXISTS",
                 "Role already exists with name: " + name, HttpStatus.CONFLICT);
         }
 
         UserRole role = new UserRole();
         role.setName(name);
-        return userRoleRepository.save(role);
+        UserRole saved = userRoleRepository.save(role);
+        log.info("[{}] Role created: name={}", LogHelper.loc(), name);
+        return saved;
     }
 
     @Transactional
@@ -73,6 +81,7 @@ public class AdminUserRoleService {
                 "Role not found with id " + id, HttpStatus.NOT_FOUND));
 
         if (!role.getName().equals(name) && userRoleRepository.existsByName(name)) {
+            log.warn("[{}] ROLE_EXISTS: name={}", LogHelper.loc(), name);
             throw new BusinessException("ROLE_EXISTS",
                 "Role already exists with name: " + name, HttpStatus.CONFLICT);
         }
@@ -82,6 +91,7 @@ public class AdminUserRoleService {
 
         // Revoke tokens for all users with this role
         revokeTokensForUsersWithRole(id);
+        log.info("[{}] Role updated: id={}, name={}", LogHelper.loc(), id, name);
 
         return savedRole;
     }
@@ -94,6 +104,7 @@ public class AdminUserRoleService {
 
         if (name != null && !name.isBlank()) {
             if (!role.getName().equals(name) && userRoleRepository.existsByName(name)) {
+                log.warn("[{}] ROLE_EXISTS: name={}", LogHelper.loc(), name);
                 throw new BusinessException("ROLE_EXISTS",
                     "Role already exists with name: " + name, HttpStatus.CONFLICT);
             }
@@ -119,6 +130,7 @@ public class AdminUserRoleService {
 
         role.setDeletedAt(LocalDateTime.now());
         userRoleRepository.save(role);
+        log.info("[{}] Role deleted: id={}", LogHelper.loc(), id);
     }
 
     @Transactional
@@ -133,6 +145,7 @@ public class AdminUserRoleService {
         // Add new permissions
         for (Long permissionId : permissionIds) {
             if (!permissionRepository.findByIdActive(permissionId).isPresent()) {
+                log.warn("[{}] PERMISSION_NOT_FOUND: id={}", LogHelper.loc(), permissionId);
                 throw new BusinessException("PERMISSION_NOT_FOUND",
                     "Permission not found with id " + permissionId, HttpStatus.NOT_FOUND);
             }
@@ -145,6 +158,7 @@ public class AdminUserRoleService {
 
         // Revoke tokens for all users with this role (permissions changed)
         revokeTokensForUsersWithRole(roleId);
+        log.info("[{}] Permissions assigned to role: roleId={}", LogHelper.loc(), roleId);
     }
 
     @Transactional
@@ -153,6 +167,7 @@ public class AdminUserRoleService {
 
         // Revoke tokens for all users with this role (permission removed)
         revokeTokensForUsersWithRole(roleId);
+        log.info("[{}] Permission removed from role: roleId={}, permissionId={}", LogHelper.loc(), roleId, permissionId);
     }
 
     /**
@@ -165,5 +180,6 @@ public class AdminUserRoleService {
         for (User user : affectedUsers) {
             tokenBlacklistService.revokeAllUserTokens(user.getId(), TOKEN_REVOCATION_TTL);
         }
+        log.info("[{}] Tokens revoked for role change: roleId={}, affectedUsers={}", LogHelper.loc(), roleId, affectedUsers.size());
     }
 }

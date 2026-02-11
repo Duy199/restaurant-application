@@ -13,8 +13,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 
 import io.jsonwebtoken.Claims;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
 
@@ -69,7 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             claims = jwtService.extractClaims(token);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
-
+            log.warn("[{}] TOKEN_EXPIRED: {}", LogHelper.loc(), e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("""
@@ -82,7 +87,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
 
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
-            // token sai, bị sửa, không hợp lệ
+            log.warn("[{}] INVALID_TOKEN: {}", LogHelper.loc(), e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("""
@@ -107,6 +112,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Check if the access token is not blacklisted (JTI check)
         if (tokenBlacklistService.isTokenBlacklisted(jti)) {
+            log.warn("[{}] TOKEN_REVOKED: jti={}", LogHelper.loc(), jti);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("""
@@ -123,6 +129,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (!roleName.equalsIgnoreCase("ROLE_ADMIN")) {
             Long revokedAt = tokenBlacklistService.getUserRevokedTimestamp(userId);
             if (revokedAt != null && tokenIssuedAt < revokedAt) {
+                log.warn("[{}] USER_TOKENS_REVOKED: userId={}", LogHelper.loc(), userId);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write("""

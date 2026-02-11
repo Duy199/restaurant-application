@@ -13,8 +13,14 @@ import com.example.RestaurantApplication.module.restaurant.model.Restaurant;
 import com.example.RestaurantApplication.module.restaurant.repository.RestaurantRepository;
 import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
+
 @Service
 public class RestaurantService {
+
+    private static final Logger log = LoggerFactory.getLogger(RestaurantService.class);
 
     @Autowired
     private RestaurantRepository restaurantRepository;
@@ -22,6 +28,7 @@ public class RestaurantService {
     public void registerNewRestaurant(String name, String address) { 
         // Registration logic here
         if (restaurantRepository.existsByName(name)) {
+            log.warn("[{}] RESTAURANT_NAME_ALREADY_EXISTS: {}", LogHelper.loc(), name);
             throw new BusinessException("RESTAURANT_NAME_ALREADY_EXISTS", "Restaurant name already exists", HttpStatus.CONFLICT);
         }
         String code = NanoIdUtils.randomNanoId();
@@ -29,7 +36,8 @@ public class RestaurantService {
         restaurant.setName(name);
         restaurant.setAddress(address);
         restaurant.setCode(code);
-        restaurantRepository.save(restaurant);        
+        restaurantRepository.save(restaurant);
+        log.info("[{}] Restaurant created: name={}", LogHelper.loc(), name);
     }
 
     public List<Restaurant> getAllRestaurants() {
@@ -45,15 +53,19 @@ public class RestaurantService {
 
         // Validate that the requested restaurant matches the authenticated user's restaurant
         if (!id.equals(authenticatedRestaurantId)) {
+            log.warn("[{}] ACCESS_DENIED: requested={} but authenticated={}", LogHelper.loc(), id, authenticatedRestaurantId);
             throw new BusinessException("ACCESS_DENIED",
                 "You can only view your own restaurant",
                 HttpStatus.FORBIDDEN);
         }
 
         return restaurantRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("RESTAURANT_NOT_FOUND",
-                "Restaurant not found with id " + id,
-                HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] RESTAURANT_NOT_FOUND: id={}", LogHelper.loc(), id);
+                return new BusinessException("RESTAURANT_NOT_FOUND",
+                    "Restaurant not found with id " + id,
+                    HttpStatus.NOT_FOUND);
+            });
     }
 
     /**
@@ -65,18 +77,23 @@ public class RestaurantService {
 
         // Validate that the target restaurant matches the authenticated user's restaurant
         if (!id.equals(authenticatedRestaurantId)) {
+            log.warn("[{}] ACCESS_DENIED: requested={} but authenticated={}", LogHelper.loc(), id, authenticatedRestaurantId);
             throw new BusinessException("ACCESS_DENIED",
                 "You can only update your own restaurant",
                 HttpStatus.FORBIDDEN);
         }
 
         Restaurant restaurant = restaurantRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("RESTAURANT_NOT_FOUND",
-                "Restaurant not found with id " + id,
-                HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] RESTAURANT_NOT_FOUND: id={}", LogHelper.loc(), id);
+                return new BusinessException("RESTAURANT_NOT_FOUND",
+                    "Restaurant not found with id " + id,
+                    HttpStatus.NOT_FOUND);
+            });
 
         // Check name uniqueness if changed
         if (!restaurant.getName().equals(name) && restaurantRepository.existsByName(name)) {
+            log.warn("[{}] RESTAURANT_NAME_ALREADY_EXISTS: {}", LogHelper.loc(), name);
             throw new BusinessException("RESTAURANT_NAME_ALREADY_EXISTS",
                 "Restaurant name already exists: " + name,
                 HttpStatus.CONFLICT);
@@ -85,6 +102,7 @@ public class RestaurantService {
         restaurant.setName(name);
         restaurant.setAddress(address);
         restaurantRepository.save(restaurant);
+        log.info("[{}] Restaurant updated: id={}", LogHelper.loc(), id);
     }
 
     /**
@@ -96,19 +114,24 @@ public class RestaurantService {
 
         // Validate that the target restaurant matches the authenticated user's restaurant
         if (!id.equals(authenticatedRestaurantId)) {
+            log.warn("[{}] ACCESS_DENIED: requested={} but authenticated={}", LogHelper.loc(), id, authenticatedRestaurantId);
             throw new BusinessException("ACCESS_DENIED",
                 "You can only update your own restaurant",
                 HttpStatus.FORBIDDEN);
         }
 
         Restaurant restaurant = restaurantRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("RESTAURANT_NOT_FOUND",
-                "Restaurant not found with id " + id,
-                HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> {
+                log.warn("[{}] RESTAURANT_NOT_FOUND: id={}", LogHelper.loc(), id);
+                return new BusinessException("RESTAURANT_NOT_FOUND",
+                    "Restaurant not found with id " + id,
+                    HttpStatus.NOT_FOUND);
+            });
 
         // Partial update - only update provided fields
         if (name != null && !name.isBlank()) {
             if (!restaurant.getName().equals(name) && restaurantRepository.existsByName(name)) {
+                log.warn("[{}] RESTAURANT_NAME_ALREADY_EXISTS: {}", LogHelper.loc(), name);
                 throw new BusinessException("RESTAURANT_NAME_ALREADY_EXISTS",
                     "Restaurant name already exists: " + name,
                     HttpStatus.CONFLICT);

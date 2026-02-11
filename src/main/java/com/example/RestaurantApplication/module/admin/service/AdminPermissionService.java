@@ -4,12 +4,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.RestaurantApplication.config.redis.TokenBlacklistService;
+import com.example.RestaurantApplication.config.tracing.LogHelper;
 import com.example.RestaurantApplication.module.permission.dto.PermissionApiDetail;
 import com.example.RestaurantApplication.module.permission.model.Permission;
 import com.example.RestaurantApplication.module.permission.model.PermissionHasPermissionApi;
@@ -24,6 +27,8 @@ import com.example.RestaurantApplication.utils.Exceptions.BusinessException;
 
 @Service
 public class AdminPermissionService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminPermissionService.class);
 
     @Autowired
     private PermissionRepository permissionRepository;
@@ -75,6 +80,7 @@ public class AdminPermissionService {
 
     public Permission createPermission(String code, String name) {
         if (permissionRepository.existsByCode(code)) {
+            log.warn("[{}] PERMISSION_EXISTS: code={}", LogHelper.loc(), code);
             throw new BusinessException("PERMISSION_EXISTS",
                 "Permission already exists with code: " + code, HttpStatus.CONFLICT);
         }
@@ -82,7 +88,9 @@ public class AdminPermissionService {
         Permission permission = new Permission();
         permission.setCode(code);
         permission.setName(name);
-        return permissionRepository.save(permission);
+        Permission saved = permissionRepository.save(permission);
+        log.info("[{}] Permission created: code={}", LogHelper.loc(), code);
+        return saved;
     }
 
     @Transactional
@@ -92,6 +100,7 @@ public class AdminPermissionService {
                 "Permission not found with id " + id, HttpStatus.NOT_FOUND));
 
         if (!permission.getCode().equals(code) && permissionRepository.existsByCode(code)) {
+            log.warn("[{}] PERMISSION_EXISTS: code={}", LogHelper.loc(), code);
             throw new BusinessException("PERMISSION_EXISTS",
                 "Permission already exists with code: " + code, HttpStatus.CONFLICT);
         }
@@ -102,6 +111,7 @@ public class AdminPermissionService {
 
         // Check if this permission is assigned to any roles, then revoke
         revokeTokensIfPermissionIsAssigned(id);
+        log.info("[{}] Permission updated: id={}", LogHelper.loc(), id);
 
         return savedPermission;
     }
@@ -114,6 +124,7 @@ public class AdminPermissionService {
 
         if (code != null && !code.isBlank()) {
             if (!permission.getCode().equals(code) && permissionRepository.existsByCode(code)) {
+                log.warn("[{}] PERMISSION_EXISTS: code={}", LogHelper.loc(), code);
                 throw new BusinessException("PERMISSION_EXISTS",
                     "Permission already exists with code: " + code, HttpStatus.CONFLICT);
             }
@@ -143,6 +154,7 @@ public class AdminPermissionService {
 
         permission.setDeletedAt(LocalDateTime.now());
         permissionRepository.save(permission);
+        log.info("[{}] Permission deleted: id={}", LogHelper.loc(), id);
     }
 
     @Transactional
@@ -157,6 +169,7 @@ public class AdminPermissionService {
         // Add new API mappings
         for (Long apiId : apiIds) {
             if (!permissionApiRepository.findByIdActive(apiId).isPresent()) {
+                log.warn("[{}] PERMISSION_API_NOT_FOUND: id={}", LogHelper.loc(), apiId);
                 throw new BusinessException("PERMISSION_API_NOT_FOUND",
                     "Permission API not found with id " + apiId, HttpStatus.NOT_FOUND);
             }
@@ -169,6 +182,7 @@ public class AdminPermissionService {
 
         // Revoke tokens for all users affected by this permission change
         revokeTokensForUsersWithPermission(permissionId);
+        log.info("[{}] APIs assigned to permission: permissionId={}", LogHelper.loc(), permissionId);
     }
 
     @Transactional
@@ -177,6 +191,7 @@ public class AdminPermissionService {
 
         // Revoke tokens for all users affected by this permission change
         revokeTokensForUsersWithPermission(permissionId);
+        log.info("[{}] API removed from permission: permissionId={}, apiId={}", LogHelper.loc(), permissionId, apiId);
     }
 
     /**
@@ -194,6 +209,7 @@ public class AdminPermissionService {
                 tokenBlacklistService.revokeAllUserTokens(user.getId(), TOKEN_REVOCATION_TTL);
             }
         }
+        log.info("[{}] Tokens revoked for permission change: permissionId={}", LogHelper.loc(), permissionId);
     }
 
     /**

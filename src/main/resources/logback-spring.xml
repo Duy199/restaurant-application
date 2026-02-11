@@ -10,6 +10,7 @@
                 <logLevel/>
                 <loggerName/>
                 <message/>
+                <logstashMarkers/>
                 <!-- Custom nested MDC provider (http, client, user) -->
                 <provider class="com.example.RestaurantApplication.config.tracing.NestedMdcJsonProvider"/>
             </providers>
