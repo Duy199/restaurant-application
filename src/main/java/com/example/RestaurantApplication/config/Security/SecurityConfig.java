@@ -66,6 +66,7 @@ public class SecurityConfig {
               // Authentication endpoints
               .requestMatchers("/api/v1/auth/logout").authenticated()
               .requestMatchers("/api/v1/auth/**").permitAll()
+              .requestMatchers("/sleep").permitAll()
 
               // Admin module - Global management (ADMIN only, hardcoded)
               .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
