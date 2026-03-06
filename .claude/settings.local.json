@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker rm -f manager worker1 worker2 worker3)",
+      "Bash(docker network rm swarm-net)"
+    ]
+  }
+}
