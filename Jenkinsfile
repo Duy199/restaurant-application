@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'duycool123/restaurant-app'
         DOCKER_TAG = "${BUILD_NUMBER}"
     }
 
@@ -25,6 +24,23 @@ pipeline {
                 }
             }
         }
+
+        // stage('Deploy to VPS') {
+        //     steps {
+        //         withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+        //             sshagent(['vps-ssh-key']) {
+        //                 sh """
+        //                     ssh -o StrictHostKeyChecking=no ubuntu@\${VPS_HOST} '
+        //                         echo \${DOCKER_PASS} | docker login -u \${DOCKER_USER} --password-stdin &&
+        //                         cd /home/ubuntu/app &&
+        //                         docker compose up -d --pull always &&
+        //                         docker logout
+        //                     '
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     post {
