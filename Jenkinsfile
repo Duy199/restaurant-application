@@ -34,14 +34,13 @@ pipeline {
                 echo "Deploying to VPS at ${VPS_HOST}"
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sshagent(['vps-ssh-key']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no root@\${VPS_HOST} '
-                                echo \${DOCKER_PASS} | docker login -u \${DOCKER_USER} --password-stdin &&
-                                cd /root/project/restaurant-app &&
-                                docker compose up -d --pull always &&
-                                docker logout
-                            '
-                        """
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no root@${VPS_HOST} \
+                                "echo '${DOCKER_PASS}' | docker login -u '${DOCKER_USER}' --password-stdin && \
+                                cd /root/project/restaurant-app && \
+                                docker compose up -d --pull always && \
+                                docker logout"
+                        '''
                     }
                 }
                 echo "Deploy completed successfully"
