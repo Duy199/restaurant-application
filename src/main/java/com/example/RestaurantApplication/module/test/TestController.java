@@ -8,7 +8,7 @@ public class TestController {
     @GetMapping("/sleep")
         public String sleep() throws InterruptedException {
         Thread.sleep(10000);
-        return "ok good ok ok oke";
+        return "test ci/cd with jenkins";
     }
 }
 
