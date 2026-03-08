@@ -9,9 +9,7 @@ pipeline {
         stage('Build Image') {
             steps {
                 echo "Building Docker image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                script {
-                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                }
+                sh "docker build --platform linux/amd64 -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
                 echo "Build completed successfully"
             }
         }
