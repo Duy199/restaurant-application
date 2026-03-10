@@ -36,6 +36,8 @@ pipeline {
                             ssh -o StrictHostKeyChecking=no root@${VPS_HOST} \
                                 "echo '${DOCKER_PASS}' | docker login -u '${DOCKER_USER}' --password-stdin && \
                                 cd /root/project/restaurant-app && \
+                                GIT_SSH_COMMAND='ssh -i ~/.ssh/restaurant_secrets_deploy_key' git -C env-config pull origin main && \
+                                cp env-config/.env .env && \
                                 docker compose up -d --pull always && \
                                 docker logout"
                         '''
